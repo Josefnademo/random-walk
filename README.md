@@ -19,32 +19,6 @@ A free browser-based tool that generates spontaneous walking routes from your lo
 
 ---
 
-## Changing the Domain
-
-When you move to a custom domain (e.g. `random-walk.com`):
-
-1. Edit **one line** in [`assets/js/config.js`](assets/js/config.js):
-   ```js
-   export const SITE_URL = 'https://random-walk.com';
-   ```
-2. Update `<link rel="canonical">` in `index.html`, `about.html`, `privacy.html`, and all guide pages.
-3. Update the URLs in `sitemap.xml`.
-4. Add a `CNAME` file in the repo root containing just: `random-walk.com`
-
----
-
-## Deployment (GitHub Pages)
-
-```bash
-git add -A
-git commit -m "feat: v2.0 production upgrade"
-git push origin main
-```
-
-Go to **Settings → Pages → Source** → `main` branch, `/ (root)`.
-
----
-
 ## Architecture
 
 ```
