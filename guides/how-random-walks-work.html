@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>How the Random Walk Generator Works — Random Walk</title>
+  <meta name="description" content="Learn how this browser-based random walk generator creates approximate local waypoints using GPS coordinates, without any server or API key.">
+  <link rel="canonical" href="https://josefnademo.github.io/random-walk/guides/how-random-walks-work.html">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="brand" href="../" aria-label="Random Walk — go home">
+        <span class="brand-dot" aria-hidden="true"></span>RANDOM/WALK
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../#challenges">Challenges</a>
+        <a href="../#how">How it works</a>
+        <a href="../">Generator</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <article class="article" aria-labelledby="guide-heading">
+      <p class="eyebrow">HOW IT WORKS</p>
+      <h1 id="guide-heading">Random points, real-world judgment</h1>
+      <p>The Random Walk Generator requests your GPS coordinates, estimates a walking radius from the duration you selected, and generates a series of waypoints arranged in a loop around your starting point.</p>
+
+      <h2>The math behind the route</h2>
+      <p>The generator uses the Haversine formula to calculate destination points on a spherical Earth. Given your latitude and longitude, a random start bearing, and a calculated radius (based on your walking speed × time), it places 3–5 waypoints evenly around a circle with slight random variation to keep each route unique.</p>
+      <p>The final waypoint always returns close to your starting location, creating a loop rather than a one-way route.</p>
+
+      <h2>Why the SVG preview is abstract</h2>
+      <p>This is a static website with no server and no street map database. The SVG map preview shows the geometric shape of your generated route — it cannot know where actual streets, paths, or accessible crossings are. Think of it as a compass bearing, not a turn-by-turn map.</p>
+
+      <h2>How actual routing works</h2>
+      <p>The "Open in Google Maps" button passes the generated coordinates as walking waypoints to Google Maps. Google's routing engine then calculates the best pedestrian path between those points using its street network data. The result may differ significantly from the straight lines in the preview — that is expected and correct.</p>
+
+      <h2>Your location is private</h2>
+      <p>Your GPS coordinates are used only within your browser session to calculate waypoints. They are never transmitted to any server, never stored in any database, and never shared with any third party. The app stores only your XP, level, achievements, and walk count locally in your browser's localStorage.</p>
+
+      <h2>Limitations to be aware of</h2>
+      <p>Random waypoints can land near private property, inaccessible terrain, water, or construction sites. Always review and adjust the route in Google Maps before walking. Use common sense and follow local laws regarding pedestrian access.</p>
+
+      <h2>The gamification system</h2>
+      <p>Every completed walk earns XP based on duration and energy level. Daily challenges refresh every calendar day using a seeded random system unique to your device, so your challenges are different from others'. Achievements unlock automatically when you meet their conditions during any walk.</p>
+
+      <p style="margin-top:32px;"><a href="../">Try the generator now ↗</a></p>
+    </article>
+  </main>
+
+  <footer role="contentinfo">
+    <a class="brand" href="../">
+      <span class="brand-dot" aria-hidden="true"></span>RANDOM/WALK
+    </a>
+    <p class="footer-copy">Walk responsibly. Generated waypoints are suggestions, not verified directions.</p>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="../">Home</a>
+      <a href="../privacy.html">Privacy</a>
+    </nav>
+  </footer>
+</body>
+</html>

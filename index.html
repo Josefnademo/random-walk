@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Random Walk Generator — Get a Spontaneous Walking Route Near You</title>
+  <meta name="description" content="Generate a spontaneous walking loop from your location in seconds. Pick your duration, get a route, earn XP, unlock achievements. Free, private, no account needed.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#080a0f">
+
+  <!-- Canonical — update via config.js SITE_URL -->
+  <link rel="canonical" href="https://josefnademo.github.io/random-walk/">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website">
+  <meta property="og:title"       content="Random Walk Generator">
+  <meta property="og:description" content="Stop deciding. Start walking. Get a spontaneous route near you.">
+  <meta property="og:url"         content="https://josefnademo.github.io/random-walk/">
+  <meta property="og:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+  <meta property="og:site_name"   content="Random Walk">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Random Walk Generator">
+  <meta name="twitter:description" content="Stop deciding. Start walking.">
+  <meta name="twitter:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+
+  <!-- Google Fonts — preconnect + direct link for best performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
+
+  <!-- Leaflet CSS (dark interactive map — no API key) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="assets/styles.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Random Walk Generator",
+    "url": "https://josefnademo.github.io/random-walk/",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript and optional location permission",
+    "description": "A free browser-based generator for spontaneous walking routes, daily challenges, and gamified fitness tracking.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": ["GPS route generation", "Daily walking challenges", "XP and level system", "Achievements", "Photo missions", "Share cards"]
+  }
+  </script>
+
+  <!-- Leaflet JS (defer to not block render) -->
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+
+  <!-- App entry point (ES module) -->
+  <script type="module" src="assets/js/main.js"></script>
+</head>
+<body>
+
+  <!-- Skip navigation for accessibility -->
+  <a class="skip-link" href="#generator">Skip to generator</a>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       AD BANNER PLACEHOLDERS
+       Remove display:none from .ad-left / .ad-right in CSS to enable
+       ═══════════════════════════════════════════════════════════ -->
+  <!-- Future Left Banner Ad -->
+  <aside class="ad-left" aria-hidden="true" aria-label="Advertisement">
+    <!-- 160×600 banner placeholder -->
+  </aside>
+  <!-- Future Right Banner Ad -->
+  <aside class="ad-right" aria-hidden="true" aria-label="Advertisement">
+    <!-- 160×600 banner placeholder -->
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════ -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="brand" href="./" aria-label="Random Walk — go to homepage">
+        <span class="brand-dot" aria-hidden="true"></span>
+        RANDOM/WALK
+      </a>
+
+      <!-- GPS permission indicator -->
+      <span class="gps-indicator"
+            id="gps-indicator"
+            role="status"
+            aria-label="Location permission status"
+            data-state="prompt">
+      </span>
+
+      <!-- Mobile hamburger -->
+      <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+
+      <!-- Main navigation -->
+      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+        <a href="#challenges">Challenges</a>
+        <a href="#how">How it works</a>
+        <a href="guides/walking-challenges.html">Guides</a>
+        <a href="privacy.html">Privacy</a>
+      </nav>
+
+      <!-- XP Bar (header) -->
+      <div class="header-xp" aria-label="Your progress">
+        <span class="level-badge" id="level-badge" aria-live="polite">Lv 1</span>
+        <div class="xp-bar-track" role="progressbar" aria-label="XP progress" aria-valuemin="0" aria-valuemax="100">
+          <div class="xp-bar-fill" id="xp-bar-fill"></div>
+        </div>
+        <span class="xp-amount" id="xp-amount" aria-live="polite">0 XP</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ═══════════════════════════════════════════════════════
+         HERO — GENERATOR
+         ═══════════════════════════════════════════════════════ -->
+    <section class="hero" id="generator" aria-labelledby="hero-heading">
+      <!-- Background orbs -->
+      <div class="orb orb-a" aria-hidden="true"></div>
+      <div class="orb orb-b" aria-hidden="true"></div>
+      <div class="orb orb-c" aria-hidden="true"></div>
+
+      <p class="eyebrow hero-eyebrow">NO PLAN. NEW PATH.</p>
+      <h1 id="hero-heading">Stop deciding.<br><span aria-hidden="true">Start walking.</span></h1>
+      <p class="hero-copy">Create a spontaneous loop near you in seconds. Your location never leaves your device.</p>
+
+      <!-- Generator Form -->
+      <form class="generator-card" id="walk-form" novalidate>
+
+        <fieldset>
+          <legend>How long?</legend>
+          <div class="segmented" role="radiogroup" aria-label="Walk duration">
+            <label><input type="radio" name="minutes" value="10"><span>10 min</span></label>
+            <label><input type="radio" name="minutes" value="20" checked><span>20 min</span></label>
+            <label><input type="radio" name="minutes" value="30"><span>30 min</span></label>
+            <label><input type="radio" name="minutes" value="60"><span>60 min</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Energy level</legend>
+          <div class="segmented three" role="radiogroup" aria-label="Energy level / difficulty">
+            <label><input type="radio" name="energy" value="easy" checked><span>Easy 🚶</span></label>
+            <label><input type="radio" name="energy" value="medium"><span>Medium 🏃</span></label>
+            <label><input type="radio" name="energy" value="bold"><span>Bold ⚡</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Route preferences <small>used when your map app calculates the route</small></legend>
+          <div class="chips" role="group" aria-label="Route preferences">
+            <label><input type="checkbox" name="avoid" value="highways" checked><span>Avoid highways</span></label>
+            <label><input type="checkbox" name="avoid" value="stairs"><span>Prefer fewer stairs</span></label>
+            <label><input type="checkbox" name="avoid" value="parks"><span>Skip parks</span></label>
+            <label><input type="checkbox" name="avoid" value="crowds"><span>Quieter vibe</span></label>
+          </div>
+        </fieldset>
+
+        <label class="mission-toggle">
+          <input type="checkbox" id="mission-enabled" checked aria-label="Add a photo mission to your walk">
+          <span class="toggle-track" aria-hidden="true"></span>
+          <span class="toggle-label">Add a photo mission 📷</span>
+        </label>
+
+        <button class="primary-button" type="submit" id="generate-btn" aria-label="Generate a random walking route near me">
+          <span>Generate my walk</span>
+          <span class="btn-arrow" aria-hidden="true">↗</span>
+        </button>
+
+        <p class="microcopy">Location is requested only after you tap the button. Never stored.</p>
+
+        <!-- GPS loading state -->
+        <div class="gps-loading" id="gps-loading" hidden aria-live="polite" aria-label="Getting your location">
+          <div class="gps-loading-header">
+            <div class="gps-spinner" aria-hidden="true"></div>
+            <p class="gps-message">Requesting location…</p>
+          </div>
+          <div class="gps-progress-track">
+            <div class="gps-progress-fill" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <!-- GPS error state -->
+        <div class="gps-error" id="gps-error" hidden role="alert">
+          <span class="gps-error-icon" aria-hidden="true">📍</span>
+          <div>
+            <p class="error-message">Location unavailable.</p>
+            <button class="gps-retry-btn" id="gps-retry" type="button">Try again</button>
+          </div>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         DAILY CHALLENGES
+         ═══════════════════════════════════════════════════════ -->
+    <section class="challenges-section reveal" id="challenges" aria-labelledby="challenges-heading">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">TODAY'S CHALLENGES</p>
+          <h2 id="challenges-heading">Fresh every day</h2>
+        </div>
+        <p class="challenges-refresh" aria-live="polite">Refreshes at midnight · your time</p>
+      </div>
+      <div class="challenges-list" id="challenges-list" role="list" aria-label="Today's daily challenges">
+        <!-- Rendered by challenges.js -->
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         RESULT SECTION
+         ═══════════════════════════════════════════════════════ -->
+    <section class="result-section" id="result" hidden aria-live="polite" aria-labelledby="result-heading">
+      <div class="result-head">
+        <div>
+          <p class="eyebrow">YOUR RANDOM WALK</p>
+          <h2 id="result-heading">A fresh route is ready</h2>
+        </div>
+        <button class="icon-button" id="regenerate" aria-label="Generate another route with same settings" title="Regenerate">↻</button>
+      </div>
+
+      <!-- Map type toggle -->
+      <div class="map-tabs" role="tablist" aria-label="Map view">
+        <button class="map-tab active" id="tab-live" role="tab" aria-selected="true"  aria-controls="leaflet-map-wrap">Live Map</button>
+        <button class="map-tab"        id="tab-preview" role="tab" aria-selected="false" aria-controls="svg-map-wrap">Preview</button>
+      </div>
+
+      <div class="result-grid">
+        <!-- Map column -->
+        <div>
+          <!-- Leaflet real map -->
+          <article class="map-card" id="leaflet-map-wrap">
+            <div id="leaflet-map" aria-label="Interactive walking route map"></div>
+            <p class="map-warning" role="note">
+              Preview only — verify actual streets, access, and safety in your map app before walking.
+            </p>
+          </article>
+
+          <!-- SVG fallback (shown when Leaflet fails or user picks Preview tab) -->
+          <article class="map-card" id="svg-map-wrap" hidden>
+            <svg id="route-map" viewBox="0 0 700 440" role="img" aria-label="Abstract preview of generated walking route">
+              <defs>
+                <linearGradient id="routeGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0"   stop-color="#c7ff55"/>
+                  <stop offset="0.5" stop-color="#60b8ff"/>
+                  <stop offset="1"   stop-color="#a78bfa"/>
+                </linearGradient>
+              </defs>
+              <g id="grid" aria-hidden="true"></g>
+              <path id="route-shadow"/>
+              <path id="route-path"/>
+              <g id="route-points"></g>
+            </svg>
+            <p class="map-warning" role="note">
+              Abstract preview only — open in Google Maps for actual walking directions.
+            </p>
+          </article>
+        </div>
+
+        <!-- Route info column -->
+        <aside class="route-card">
+          <!-- Stats -->
+          <div class="stats-row">
+            <div class="stat-box">
+              <strong class="stat-value" id="stat-time">20</strong>
+              <span class="stat-label">minutes</span>
+            </div>
+            <div class="stat-box">
+              <strong class="stat-value" id="stat-distance">1.4</strong>
+              <span class="stat-label">est. km</span>
+            </div>
+            <div class="stat-box">
+              <strong class="stat-value" id="stat-turns">4</strong>
+              <span class="stat-label">waypoints</span>
+            </div>
+            <div class="stat-box">
+              <strong class="stat-value" id="stat-calories">82</strong>
+              <span class="stat-label">kcal est.</span>
+            </div>
+          </div>
+
+          <!-- Photo mission -->
+          <div class="mission-box" id="mission-box">
+            <p class="mission-label">📷 Photo Mission</p>
+            <strong id="mission-text">Find a yellow door.</strong>
+          </div>
+
+          <!-- Step directions -->
+          <ol class="directions" id="directions" aria-label="Walk directions"></ol>
+
+          <!-- Map links -->
+          <div class="result-actions">
+            <a class="primary-button" id="google-link" href="#" target="_blank" rel="noopener noreferrer"
+               aria-label="Open route in Google Maps">
+              <span>Open in Google Maps</span>
+              <span class="btn-arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="secondary-button" id="osm-link" href="#" target="_blank" rel="noopener noreferrer"
+               aria-label="View area in OpenStreetMap">
+              View area in OpenStreetMap
+            </a>
+            <div style="display:flex;gap:8px;">
+              <button class="secondary-button" id="result-share-btn" type="button"
+                      style="flex:1" aria-label="Share your walk results">
+                Share 📤
+              </button>
+            </div>
+          </div>
+
+          <!-- Complete walk -->
+          <button class="complete-button" id="complete" type="button"
+                  aria-label="Mark this walk as completed and earn XP">
+            <span aria-hidden="true">✓</span> Complete walk &amp; earn XP
+          </button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         REWARD / COMPLETION SCREEN
+         ═══════════════════════════════════════════════════════ -->
+    <section class="reward-section" id="reward" hidden aria-live="assertive" aria-labelledby="reward-heading">
+      <div class="reward-inner">
+        <span class="reward-emoji" aria-hidden="true">🎉</span>
+        <h2 class="reward-title" id="reward-heading">Walk Complete!</h2>
+        <p class="reward-subtitle">You chose motion over indecision.</p>
+
+        <!-- Reward stats -->
+        <div class="reward-stats">
+          <div class="reward-stat-box">
+            <span class="reward-stat-val" id="reward-km">0.0</span>
+            <span class="reward-stat-lbl">km walked</span>
+          </div>
+          <div class="reward-stat-box">
+            <span class="reward-stat-val" id="reward-minutes">20</span>
+            <span class="reward-stat-lbl">minutes</span>
+          </div>
+          <div class="reward-stat-box">
+            <span class="reward-stat-val" id="reward-calories">82</span>
+            <span class="reward-stat-lbl">kcal</span>
+          </div>
+        </div>
+
+        <!-- XP earned banner -->
+        <div class="reward-xp-banner">
+          <span class="reward-xp-icon" aria-hidden="true">⚡</span>
+          <div>
+            <div class="reward-xp-text" id="reward-xp">+80 XP</div>
+            <div class="reward-xp-sub">earned this walk</div>
+          </div>
+        </div>
+
+        <!-- Streak -->
+        <p class="reward-streak">
+          🔥 Current streak: <span id="reward-streak">1</span> day(s) ·
+          Total walks: <span id="reward-walks">1</span>
+        </p>
+
+        <!-- Newly unlocked achievements -->
+        <div class="reward-achievements" id="reward-achievements" hidden aria-live="polite">
+          <!-- Populated by main.js -->
+        </div>
+
+        <!-- Actions -->
+        <div class="reward-actions">
+          <div class="reward-btn-row">
+            <button class="secondary-button" id="reward-share-btn" type="button"
+                    aria-label="Share your walk results">
+              Share 📤
+            </button>
+            <button class="secondary-button" id="reward-invite-btn" type="button"
+                    aria-label="Invite friends to Random Walk">
+              Invite Friends 🤝
+            </button>
+          </div>
+          <button class="primary-button" id="new-walk" type="button">
+            <span>Create another walk</span>
+            <span class="btn-arrow" aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         STATS SECTION
+         ═══════════════════════════════════════════════════════ -->
+    <section class="stats-section reveal" id="stats" aria-labelledby="stats-heading">
+      <p class="eyebrow">YOUR PROGRESS</p>
+      <h2 id="stats-heading" style="margin-top:8px">All-time stats</h2>
+
+      <!-- Level / title line -->
+      <p style="margin-top:8px;color:var(--muted);font-size:0.9rem;">
+        <strong id="level-title" style="color:var(--lime)">Wanderer</strong>
+        &mdash; Level <strong id="stats-level">1</strong>
+      </p>
+
+      <div class="stats-grid">
+        <div class="stats-tile">
+          <span class="tile-val" id="stats-walks">0</span>
+          <span class="tile-lbl">Total Walks</span>
+        </div>
+        <div class="stats-tile">
+          <span class="tile-val" id="stats-km">0.0</span>
+          <span class="tile-lbl">Km Walked</span>
+        </div>
+        <div class="stats-tile">
+          <span class="tile-val" id="stats-streak">0</span>
+          <span class="tile-lbl">Day Streak 🔥</span>
+        </div>
+        <div class="stats-tile">
+          <span class="tile-val" id="stats-longest">0</span>
+          <span class="tile-lbl">Best Streak</span>
+        </div>
+        <div class="stats-tile">
+          <span class="tile-val" id="stats-xp">0</span>
+          <span class="tile-lbl">Total XP</span>
+        </div>
+        <div class="stats-tile">
+          <span class="tile-val" id="stats-level-2">1</span>
+          <span class="tile-lbl">Level</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ACHIEVEMENTS GALLERY
+         ═══════════════════════════════════════════════════════ -->
+    <section class="achievements-section reveal" id="achievements" aria-labelledby="achievements-heading">
+      <p class="eyebrow">ACHIEVEMENTS</p>
+      <h2 id="achievements-heading" style="margin-top:8px">Collect them all</h2>
+      <div class="achievements-grid" id="achievements-grid" role="list" aria-label="Achievements">
+        <!-- Rendered by gamification.js via main.js -->
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         HOW IT WORKS
+         ═══════════════════════════════════════════════════════ -->
+    <section class="how-section reveal" id="how" aria-labelledby="how-heading">
+      <p class="eyebrow">HOW IT WORKS</p>
+      <h2 id="how-heading" style="margin-top:8px">Three steps to your next walk</h2>
+      <div class="steps-grid">
+        <article class="step-card">
+          <span class="step-num">01</span>
+          <h3>Pick your time</h3>
+          <p>Choose 10, 20, 30 or 60 minutes and set your energy level. Add a photo mission for extra fun.</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">02</span>
+          <h3>Allow location once</h3>
+          <p>Your GPS coordinates are used locally in your browser to calculate a loop near you. Nothing is stored or sent anywhere.</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">03</span>
+          <h3>Walk, earn XP, level up</h3>
+          <p>Follow the waypoints in Google Maps. Complete the walk to earn XP, unlock achievements, and keep your daily streak.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SEO CONTENT
+         ═══════════════════════════════════════════════════════ -->
+    <section class="seo-section reveal" aria-label="About Random Walk Generator">
+      <div>
+        <p class="eyebrow">A WALKING IDEA FOR RIGHT NOW</p>
+        <h2>Where should I walk today?</h2>
+      </div>
+      <div>
+        <p>Random Walk removes the hardest part of going outside: choosing a direction. Select a duration and receive a new set of nearby waypoints plus an optional photo challenge — every time, for free.</p>
+        <p>Use it for a daily walking challenge, a screen break, a spontaneous date, or a weekend adventure. No account required. No data collected. Earn XP and level up just by walking.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         GUIDE LINKS
+         ═══════════════════════════════════════════════════════ -->
+    <section class="guides-section reveal" aria-labelledby="guides-heading">
+      <h2 id="guides-heading">More walking inspiration</h2>
+      <div class="link-cards" role="list">
+        <a href="guides/walking-challenges.html" class="link-card" role="listitem">
+          <span class="link-card-tag">Guide</span>
+          <strong class="link-card-title">21 Walking Challenges</strong>
+          <span class="link-card-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a href="guides/daily-walk-ideas.html" class="link-card" role="listitem">
+          <span class="link-card-tag">Ideas</span>
+          <strong class="link-card-title">Daily Walk Ideas</strong>
+          <span class="link-card-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a href="guides/how-random-walks-work.html" class="link-card" role="listitem">
+          <span class="link-card-tag">About</span>
+          <strong class="link-card-title">How Random Routes Work</strong>
+          <span class="link-card-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════ -->
+  <footer role="contentinfo">
+    <a class="brand" href="./" aria-label="Random Walk homepage">
+      <span class="brand-dot" aria-hidden="true"></span>RANDOM/WALK
+    </a>
+    <p class="footer-copy">Walk responsibly. Waypoints are suggestions, not verified pedestrian directions. Always check for real-world access and safety.</p>
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="about.html">About</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="guides/walking-challenges.html">Challenges</a>
+    </nav>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODALS
+       ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Share Card Modal -->
+  <div class="modal" id="share-modal" hidden aria-modal="true" role="dialog" aria-labelledby="share-modal-title">
+    <div class="modal-box">
+      <button class="modal-close" data-close-modal="share-modal" aria-label="Close share dialog">✕</button>
+      <h2 class="modal-title" id="share-modal-title">Share your walk</h2>
+
+      <!-- Card type selector -->
+      <div class="share-type-tabs" role="tablist" aria-label="Card format">
+        <button class="share-type-btn active" id="share-story-btn" type="button" data-type="story">Story (9:16)</button>
+        <button class="share-type-btn"        id="share-square-btn" type="button" data-type="square">Square</button>
+        <button class="share-type-btn"        id="share-landscape-btn" type="button" data-type="landscape">Landscape</button>
+      </div>
+
+      <!-- Preview area -->
+      <div class="share-preview" id="share-preview" aria-label="Share card preview">
+        <p style="color:var(--muted);font-size:0.85rem;">Generating card…</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="share-actions">
+        <button class="secondary-button" id="download-card-btn" type="button" aria-label="Download share card as PNG">
+          Download PNG ↓
+        </button>
+        <button class="secondary-button" id="native-share-btn" type="button" aria-label="Share via system share sheet">
+          Share / Copy Link 📤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invite Friends Modal -->
+  <div class="modal" id="invite-modal" hidden aria-modal="true" role="dialog" aria-labelledby="invite-modal-title">
+    <div class="modal-box">
+      <button class="modal-close" data-close-modal="invite-modal" aria-label="Close invite dialog">✕</button>
+      <h2 class="modal-title" id="invite-modal-title">Invite Friends</h2>
+
+      <div id="invite-slider">
+        <div class="slider-viewport">
+          <div class="slider-track">
+            <!-- Slide 1 -->
+            <div class="slide">
+              <span class="slide-emoji" aria-hidden="true">🚀</span>
+              <h3>Walk Together</h3>
+              <p>Share Random Walk with a friend and make exploring your city a game you play together.</p>
+              <div class="qr-wrap">
+                <img id="qr-code-img" src="" alt="QR code to open Random Walk" width="150" height="150" loading="lazy">
+                <span class="invite-link" aria-label="Site URL">josefnademo.github.io/random-walk</span>
+              </div>
+            </div>
+            <!-- Slide 2 -->
+            <div class="slide">
+              <span class="slide-emoji" aria-hidden="true">🎯</span>
+              <h3>Daily Challenges</h3>
+              <p>Every day brings new challenges. Share today's challenge with friends and see who completes it first.</p>
+              <button class="secondary-button" id="copy-invite-btn" type="button" style="margin-top:12px"
+                      aria-label="Copy invite link to clipboard">
+                Copy Invite Link 🔗
+              </button>
+            </div>
+            <!-- Slide 3 -->
+            <div class="slide">
+              <span class="slide-emoji" aria-hidden="true">🌟</span>
+              <h3>Level Up Together</h3>
+              <p>Earn XP, unlock achievements, and reach the top levels. The more you walk, the more you unlock.</p>
+              <p style="margin-top:12px;font-size:0.78rem;color:var(--muted);">Free · Private · No account needed</p>
+              <button class="primary-button" type="button"
+                      onclick="document.getElementById('invite-modal').classList.remove('modal-open');document.getElementById('invite-modal').hidden=true;document.getElementById('generator').scrollIntoView({behavior:'smooth'});"
+                      style="margin-top:16px">
+                <span>Start Walking</span>
+                <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Slider navigation -->
+        <div class="slider-nav" aria-label="Slide navigation">
+          <button class="slider-prev" aria-label="Previous slide">←</button>
+          <div class="slider-dots" role="tablist">
+            <button class="slider-dot active" role="tab" aria-label="Slide 1" aria-selected="true"></button>
+            <button class="slider-dot"        role="tab" aria-label="Slide 2" aria-selected="false"></button>
+            <button class="slider-dot"        role="tab" aria-label="Slide 3" aria-selected="false"></button>
+          </div>
+          <button class="slider-next" aria-label="Next slide">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Up Overlay -->
+  <div class="levelup-overlay" id="levelup-overlay" hidden aria-live="assertive" aria-atomic="true"
+       role="status" aria-label="Level up!">
+    <div class="levelup-badge" aria-hidden="true">
+      <span class="levelup-level" id="levelup-number">2</span>
+      <span class="levelup-lbl">Level</span>
+    </div>
+    <h2 class="levelup-heading">Level Up! 🎊</h2>
+    <p class="levelup-title" id="levelup-title">Pavement Pioneer</p>
+  </div>
+
+  <!-- Toast notification container (populated by ui.js) -->
+  <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Map tab toggle script (inline, no-module, fast) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var tabLive    = document.getElementById('tab-live');
+      var tabPreview = document.getElementById('tab-preview');
+      var liveWrap   = document.getElementById('leaflet-map-wrap');
+      var svgWrap    = document.getElementById('svg-map-wrap');
+
+      function activate(tab, show, hide) {
+        tabLive.classList.toggle('active', tab === 'live');
+        tabPreview.classList.toggle('active', tab === 'preview');
+        tabLive.setAttribute('aria-selected',    tab === 'live'    ? 'true' : 'false');
+        tabPreview.setAttribute('aria-selected',  tab === 'preview' ? 'true' : 'false');
+        if (show) show.hidden = false;
+        if (hide) hide.hidden = true;
+      }
+
+      tabLive?.addEventListener('click',    function() { activate('live',    liveWrap, svgWrap); });
+      tabPreview?.addEventListener('click', function() { activate('preview', svgWrap, liveWrap); });
+    });
+  </script>
+
+</body>
+</html>

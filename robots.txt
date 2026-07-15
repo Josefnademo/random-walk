@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://josefnademo.github.io/random-walk/sitemap.xml

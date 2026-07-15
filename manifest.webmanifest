@@ -1,0 +1,37 @@
+{
+  "name": "Random Walk Generator",
+  "short_name": "Random Walk",
+  "description": "Generate spontaneous walking routes near you. Earn XP, complete daily challenges, unlock achievements.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080a0f",
+  "theme_color": "#080a0f",
+  "lang": "en",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Generate Walk",
+      "short_name": "Walk",
+      "description": "Generate a new walking route",
+      "url": "./#generator",
+      "icons": [{ "src": "assets/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Today's Challenges",
+      "short_name": "Challenges",
+      "description": "See today's daily challenges",
+      "url": "./#challenges",
+      "icons": [{ "src": "assets/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [],
+  "edge_side_panel": { "preferred_width": 480 }
+}
