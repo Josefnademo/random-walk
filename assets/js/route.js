@@ -40,23 +40,34 @@ function destination(lat, lon, bearing, distanceKm) {
  * @returns {{ pts: [number,number][], totalKm: number, calories: number }}
  */
 export function buildRoute(lat, lon, minutes, energy) {
-  const speed = energy === 'easy' ? 3.8 : energy === 'medium' ? 4.6 : 5.2; // km/h
-  const totalKm  = speed * minutes / 60;
-  const radius   = Math.max(0.12, totalKm / (2 * Math.PI));
-  const count    = minutes <= 10 ? 3 : minutes <= 30 ? 4 : 5;
+  // Realistic walking speeds (km/h) — used to estimate total loop distance
+  const speed   = energy === 'easy' ? 4.0 : energy === 'medium' ? 4.8 : 5.5;
+  const totalKm = speed * minutes / 60;
+
+  // FIX: The route is a roughly circular loop. The circumference of a circle
+  // is 2πr, so r = totalKm / (2π). But each straight leg between waypoints
+  // is a chord, not an arc — Google Maps walking routing adds extra distance
+  // following actual streets. Dividing by π instead of 2π gives a radius that
+  // results in a Google Maps route close to the intended walking distance.
+  const radius = Math.max(0.08, totalKm / (Math.PI * 2.2));
+
+  const count        = minutes <= 10 ? 3 : minutes <= 30 ? 4 : 5;
   const startBearing = Math.random() * 360;
 
   const pts = [[lat, lon]];
   for (let i = 1; i <= count; i++) {
-    const angle = startBearing + (360 / count) * i + (Math.random() * 30 - 15);
-    const r     = radius * (0.72 + Math.random() * 0.35);
+    // Evenly space waypoints around the circle, with slight random angle jitter
+    const angle = startBearing + (360 / count) * i + (Math.random() * 20 - 10);
+    // Slight radius variation (±10%) for a natural-feeling loop
+    const r     = radius * (0.9 + Math.random() * 0.2);
     pts.push(destination(lat, lon, angle, r));
   }
   pts.push([lat, lon]); // close the loop
 
-  const actualKm = totalKm * (0.92 + Math.random() * 0.18);
+  // Reported distance: actual street routing is ~20-30% longer than straight lines
+  const actualKm = totalKm * (0.95 + Math.random() * 0.1);
 
-  // Calorie estimate: MET 3.5 (steady walking) × 70 kg average × hours
+  // Calorie estimate: MET 3.5 × 70 kg average × hours
   const calories = Math.round(3.5 * 70 * (minutes / 60));
 
   return { pts, totalKm: +actualKm.toFixed(2), calories };

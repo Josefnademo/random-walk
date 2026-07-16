@@ -31,6 +31,50 @@ const state = {
   lastShareCard: null,  // HTMLCanvasElement
 };
 
+// ─── Session persistence ──────────────────────────────────────────────────────
+// Saves the active walk to sessionStorage so navigating away and back
+// restores the map and game state.
+
+const SESSION_KEY = 'rw2_activeWalk';
+
+function saveSession() {
+  if (!state.route) return;
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      route:    state.route,
+      minutes:  state.minutes,
+      energy:   state.energy,
+      missionOn: state.missionOn,
+      mission:  state.mission,
+      position: state.position ? {
+        latitude:  state.position.latitude,
+        longitude: state.position.longitude,
+        accuracy:  state.position.accuracy,
+      } : null,
+    }));
+  } catch {}
+}
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s?.route?.pts) return false;
+    state.route    = s.route;
+    state.minutes  = s.minutes  ?? 20;
+    state.energy   = s.energy   ?? 'easy';
+    state.missionOn = s.missionOn ?? true;
+    state.mission  = s.mission  ?? '';
+    state.position = s.position  ?? null;
+    return true;
+  } catch { return false; }
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+}
+
 // ─── Photo Missions ───────────────────────────────────────────────────────────
 
 const MISSIONS = [
@@ -65,7 +109,6 @@ function randomMission() {
 function updateXPUI(xp, animate = false) {
   const info = getProgressInfo(xp);
 
-  // Header XP bar
   const xpBar  = document.getElementById('xp-bar-fill');
   const xpAmt  = document.getElementById('xp-amount');
   const lvlBdg = document.getElementById('level-badge');
@@ -85,7 +128,6 @@ function updateXPUI(xp, animate = false) {
     xpBar.setAttribute('title', info.isMax ? 'Max level reached!' : `${info.needed} XP to next level`);
   }
 
-  // Stats section
   const statsXP  = document.getElementById('stats-xp');
   const statsLvl = document.getElementById('stats-level');
   if (statsXP)  statsXP.textContent  = xp.toLocaleString();
@@ -98,20 +140,24 @@ function renderChallenges() {
   const container = document.getElementById('challenges-list');
   if (!container) return;
 
-  const challenges = getDailyChallenges();
-  const state      = getChallengeState();
+  const challenges  = getDailyChallenges();
+  const chState     = getChallengeState();
+  const acceptedId  = sessionStorage.getItem('acceptedChallenge');
 
   container.innerHTML = challenges.map(ch => {
     const r    = RARITY[ch.rarity];
-    const done = !!state.completed[ch.id];
+    const done = !!chState.completed[ch.id];
+    const isAccepted = acceptedId === ch.id;
+
     return `
-      <article class="challenge-card ${done ? 'challenge-done' : ''}"
+      <article class="challenge-card ${done ? 'challenge-done' : ''} ${isAccepted ? 'challenge-accepted' : ''}"
                data-id="${ch.id}"
                data-rarity="${ch.rarity}"
                style="--rarity-color:${r.color};--rarity-bg:${r.bg};--rarity-border:${r.border}">
         <header class="challenge-header">
           <span class="challenge-rarity">${r.label}</span>
           ${done ? '<span class="challenge-checkmark" aria-label="Completed">✓</span>' : ''}
+          ${isAccepted && !done ? '<span class="challenge-active-badge">ACTIVE ▶</span>' : ''}
         </header>
         <div class="challenge-icon" aria-hidden="true">${ch.icon}</div>
         <h3 class="challenge-title">${ch.title}</h3>
@@ -120,7 +166,12 @@ function renderChallenges() {
           <span class="challenge-xp">+${ch.xp} XP</span>
           ${ch.est ? `<span class="challenge-est">~${ch.est} min</span>` : ''}
         </footer>
-        ${!done ? `<button class="challenge-accept-btn" data-id="${ch.id}" aria-label="Accept ${ch.title}">Accept Challenge</button>` : '<div class="challenge-complete-label">Completed!</div>'}
+        ${done
+          ? '<div class="challenge-complete-label">Completed! ✓</div>'
+          : isAccepted
+            ? '<div class="challenge-active-label">Challenge active — complete your walk to earn XP</div>'
+            : `<button class="challenge-accept-btn" data-id="${ch.id}" aria-label="Accept ${ch.title}">Accept Challenge</button>`
+        }
       </article>`;
   }).join('');
 
@@ -128,11 +179,20 @@ function renderChallenges() {
   container.querySelectorAll('.challenge-accept-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
-      showToast(`Challenge accepted! Complete your walk to earn XP.`, 'info');
-      // Scroll to generator
-      document.getElementById('generator')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Store accepted challenge ID for auto-complete after walk
+      const ch = challenges.find(c => c.id === id);
+
+      // Save accepted challenge
       sessionStorage.setItem('acceptedChallenge', id);
+
+      // Instant visual feedback — re-render challenges
+      renderChallenges();
+
+      showToast(`✓ "${ch?.title}" accepted! Generate a walk to start.`, 'success', 4500);
+
+      // Scroll to generator smoothly
+      setTimeout(() => {
+        document.getElementById('generator')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 400);
     });
   });
 }
@@ -180,7 +240,7 @@ function renderStats() {
 
 // ─── Result Section ───────────────────────────────────────────────────────────
 
-function showResult(route, minutes, energy, missionOn) {
+function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
   const resultSection = document.getElementById('result');
   if (!resultSection) return;
 
@@ -211,36 +271,46 @@ function showResult(route, minutes, energy, missionOn) {
   if (missionBox)  missionBox.hidden  = !missionOn;
   if (missionText) missionText.textContent = state.mission;
 
-  // Draw map
-  if (isLeafletReady()) {
-    const mapReady = initMap('leaflet-map');
-    if (mapReady) {
-      invalidateMapSize();
-      drawRouteOnMap(route.pts);
-    }
-  }
-  drawSVGRoute(route.pts, 'route-map'); // always draw SVG too (shown when Leaflet fails)
-
-  // Show section
+  // ── FIX: Show section FIRST so the map container has real dimensions ──
   resultSection.hidden = false;
   resultSection.setAttribute('aria-hidden', 'false');
+
+  // Always draw SVG fallback (instant, no tiles needed)
+  drawSVGRoute(route.pts, 'route-map');
+
+  // Then init Leaflet — now the container is visible and has real size
+  if (!skipMapInit && isLeafletReady()) {
+    // Small delay so the browser completes layout before Leaflet measures
+    setTimeout(() => {
+      const mapReady = initMap('leaflet-map');
+      if (mapReady) {
+        drawRouteOnMap(route.pts);
+        invalidateMapSize();
+      }
+    }, 80);
+  }
 
   // Smooth scroll
   setTimeout(() => {
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 
-  // Award generation XP
-  const generates = Storage.incrementGenerates();
-  const { newXP, leveledUp, newLevel, newAchievements } = addXP(10);
-  updateXPUI(newXP, true);
+  // Save session so navigating away and back restores the game
+  saveSession();
 
-  if (leveledUp) {
-    setTimeout(() => showLevelUp(newLevel, getTitle(newLevel)), 800);
+  // Award generation XP (only on new generate, not on session restore)
+  if (!skipMapInit) {
+    const { newXP, leveledUp, newLevel, newAchievements } = addXP(10);
+    updateXPUI(newXP, true);
+    Storage.incrementGenerates();
+
+    if (leveledUp) {
+      setTimeout(() => showLevelUp(newLevel, getTitle(newLevel)), 800);
+    }
+    newAchievements.forEach((a, i) => {
+      setTimeout(() => showAchievement(a), i * 800 + 500);
+    });
   }
-  newAchievements.forEach((a, i) => {
-    setTimeout(() => showAchievement(a), i * 800 + 500);
-  });
 }
 
 // ─── Walk Completion ──────────────────────────────────────────────────────────
@@ -278,19 +348,21 @@ async function completeWalk() {
 
   // Check accepted challenge
   const acceptedId = sessionStorage.getItem('acceptedChallenge');
-  let challengeCompleted = false;
   if (acceptedId) {
-    challengeCompleted = completeChallenge(acceptedId);
+    const didComplete = completeChallenge(acceptedId);
     sessionStorage.removeItem('acceptedChallenge');
-    if (challengeCompleted) {
+    if (didComplete) {
       const challenges = getDailyChallenges();
       const ch = challenges.find(c => c.id === acceptedId);
       if (ch) {
-        addXP(ch.xp); // bonus XP for challenge
+        addXP(ch.xp);
         showToast(`Challenge "${ch.title}" completed! +${ch.xp} XP`, 'success');
       }
     }
   }
+
+  // Clear session — walk is done
+  clearSession();
 
   // Hide result, show reward
   const resultSection = document.getElementById('result');
@@ -298,7 +370,6 @@ async function completeWalk() {
   if (resultSection) resultSection.hidden = true;
 
   if (rewardSection) {
-    // Fill reward stats
     const set = (id, val) => { const e = rewardSection.querySelector(`#${id}`); if (e) e.textContent = val; };
     set('reward-km',       totalKm.toFixed(2));
     set('reward-minutes',  minutes);
@@ -322,11 +393,9 @@ async function completeWalk() {
     rewardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Animate XP
   updateXPUI(newXP, true);
   floatXP(xpEarned, document.getElementById('xp-bar-fill'));
 
-  // Celebrations
   if (!prefersReducedMotion()) {
     triggerConfetti(rewardSection || document.body, 100);
   }
@@ -335,12 +404,10 @@ async function completeWalk() {
     setTimeout(() => showLevelUp(newLevel, getTitle(newLevel)), 1200);
   }
 
-  // Staggered achievement toasts
   newAchievements.forEach((a, i) => {
     setTimeout(() => showAchievement(a), i * 900 + 1000);
   });
 
-  // Update gallery
   renderAchievements();
   renderStats();
   renderChallenges();
@@ -367,10 +434,10 @@ async function completeWalk() {
 async function generate(e) {
   e?.preventDefault();
 
-  const form     = document.getElementById('walk-form');
-  const data     = new FormData(form);
-  state.minutes  = Number(data.get('minutes'))  || 20;
-  state.energy   = data.get('energy')           || 'easy';
+  const form      = document.getElementById('walk-form');
+  const data      = new FormData(form);
+  state.minutes   = Number(data.get('minutes'))  || 20;
+  state.energy    = data.get('energy')           || 'easy';
   state.missionOn = document.getElementById('mission-enabled')?.checked ?? true;
   state.mission   = randomMission();
 
@@ -396,7 +463,7 @@ async function generate(e) {
     );
     state.route = route;
 
-    showResult(route, state.minutes, state.energy, state.missionOn);
+    showResult(route, state.minutes, state.energy, state.missionOn, false);
 
   } catch (err) {
     setGPSState('error', err.message);
@@ -421,7 +488,6 @@ async function handleShare(type = 'story') {
   try {
     const canvas = await generateShareCard(stats, type);
 
-    // Show preview in share modal
     const preview = document.getElementById('share-preview');
     if (preview) {
       preview.innerHTML = '';
@@ -448,7 +514,6 @@ function registerSW() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').catch(e => {
-        // SW registration failure is non-fatal — app still works fully
         console.info('SW registration skipped:', e.message);
       });
     });
@@ -458,22 +523,71 @@ function registerSW() {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 function init() {
-  // Initialize storage (migrate legacy data)
   Storage.init();
-
-  // Register service worker
   registerSW();
 
-  // Initial UI state from storage
   const stats = Storage.getStats();
   updateXPUI(stats.xp);
   renderStats();
   renderChallenges();
   renderAchievements();
 
+  // ── Restore active walk session if user navigated away ──
+  if (loadSession()) {
+    // Re-render form to match restored state
+    const minutesInput = document.querySelector(`input[name="minutes"][value="${state.minutes}"]`);
+    const energyInput  = document.querySelector(`input[name="energy"][value="${state.energy}"]`);
+    if (minutesInput) minutesInput.checked = true;
+    if (energyInput)  energyInput.checked  = true;
+    const missionToggle = document.getElementById('mission-enabled');
+    if (missionToggle) missionToggle.checked = state.missionOn;
+
+    // Show the result section with skipMapInit=true (map init runs after 80ms delay inside showResult)
+    showResult(state.route, state.minutes, state.energy, state.missionOn, true);
+
+    // Then initialize the map (skipMapInit avoids XP award but still draws the map)
+    setTimeout(() => {
+      if (isLeafletReady()) {
+        const mapReady = initMap('leaflet-map');
+        if (mapReady) {
+          drawRouteOnMap(state.route.pts);
+          invalidateMapSize();
+        }
+      }
+    }, 150);
+
+    showToast('Walk restored! Your route is still active.', 'info', 3000);
+  }
+
   // Wire form
   const form = document.getElementById('walk-form');
   form?.addEventListener('submit', generate);
+
+  // Map view tabs (Live Map ↔ Preview SVG)
+  const tabLive    = document.getElementById('tab-live');
+  const tabPreview = document.getElementById('tab-preview');
+  const liveWrap   = document.getElementById('leaflet-map-wrap');
+  const svgWrap    = document.getElementById('svg-map-wrap');
+
+  tabLive?.addEventListener('click', () => {
+    tabLive.classList.add('active');
+    tabPreview?.classList.remove('active');
+    tabLive.setAttribute('aria-selected', 'true');
+    tabPreview?.setAttribute('aria-selected', 'false');
+    if (liveWrap) liveWrap.hidden = false;
+    if (svgWrap)  svgWrap.hidden  = true;
+    // Leaflet needs its container to be visible before tiles load
+    invalidateMapSize();
+  });
+
+  tabPreview?.addEventListener('click', () => {
+    tabPreview.classList.add('active');
+    tabLive?.classList.remove('active');
+    tabPreview.setAttribute('aria-selected', 'true');
+    tabLive?.setAttribute('aria-selected', 'false');
+    if (svgWrap)  svgWrap.hidden  = false;
+    if (liveWrap) liveWrap.hidden = true;
+  });
 
   // Regenerate button
   document.getElementById('regenerate')?.addEventListener('click', () => {
@@ -486,7 +600,7 @@ function init() {
       );
       state.route   = route;
       state.mission = randomMission();
-      showResult(route, state.minutes, state.energy, state.missionOn);
+      showResult(route, state.minutes, state.energy, state.missionOn, false);
     } else {
       generate();
     }
@@ -517,11 +631,9 @@ function init() {
       const type = btn.dataset.type;
       if (!type) return;
 
-      // Update active tab UI
       document.querySelectorAll('.share-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // Regenerate card of the selected type
       if (!state.route) return;
       const stats = {
         km:         state.route.totalKm,
@@ -600,7 +712,7 @@ function init() {
   // Scroll reveal
   initRevealAnimations();
 
-  // Pre-check GPS permission (non-blocking — just to show indicator)
+  // Pre-check GPS permission
   checkPermission().then(perm => {
     const indicator = document.getElementById('gps-indicator');
     if (indicator) {
