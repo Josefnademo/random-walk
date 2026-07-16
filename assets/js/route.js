@@ -40,34 +40,32 @@ function destination(lat, lon, bearing, distanceKm) {
  * @returns {{ pts: [number,number][], totalKm: number, calories: number }}
  */
 export function buildRoute(lat, lon, minutes, energy) {
-  // Realistic walking speeds (km/h) — used to estimate total loop distance
+  // Realistic walking speeds (km/h)
   const speed   = energy === 'easy' ? 4.0 : energy === 'medium' ? 4.8 : 5.5;
-  const totalKm = speed * minutes / 60;
+  const totalKm = speed * (minutes / 60);
 
-  // FIX: The route is a roughly circular loop. The circumference of a circle
-  // is 2πr, so r = totalKm / (2π). But each straight leg between waypoints
-  // is a chord, not an arc — Google Maps walking routing adds extra distance
-  // following actual streets. Dividing by π instead of 2π gives a radius that
-  // results in a Google Maps route close to the intended walking distance.
-  const radius = Math.max(0.08, totalKm / (Math.PI * 2.2));
+  const count = minutes <= 10 ? 3 : minutes <= 30 ? 4 : 5;
 
-  const count        = minutes <= 10 ? 3 : minutes <= 30 ? 4 : 5;
+  // Geometric fix: N waypoints evenly on a circle form a regular polygon.
+  // Polygon perimeter = N × 2r × sin(π/N)
+  // Solving for r: r = totalKm / (N × 2 × sin(π/N))
+  // Street routing adds ~25% extra vs straight lines, so we scale down by 1.25
+  const chordFactor = count * 2 * Math.sin(Math.PI / count) * 1.25;
+  const radius      = Math.max(0.06, totalKm / chordFactor);
+
   const startBearing = Math.random() * 360;
 
   const pts = [[lat, lon]];
   for (let i = 1; i <= count; i++) {
-    // Evenly space waypoints around the circle, with slight random angle jitter
-    const angle = startBearing + (360 / count) * i + (Math.random() * 20 - 10);
-    // Slight radius variation (±10%) for a natural-feeling loop
-    const r     = radius * (0.9 + Math.random() * 0.2);
+    const angle = startBearing + (360 / count) * i + (Math.random() * 15 - 7.5);
+    const r     = radius * (0.9 + Math.random() * 0.2); // ±10% variation
     pts.push(destination(lat, lon, angle, r));
   }
   pts.push([lat, lon]); // close the loop
 
-  // Reported distance: actual street routing is ~20-30% longer than straight lines
-  const actualKm = totalKm * (0.95 + Math.random() * 0.1);
+  // Reported walking distance (straight-line × 1.25 street factor)
+  const actualKm = totalKm * (0.97 + Math.random() * 0.06);
 
-  // Calorie estimate: MET 3.5 × 70 kg average × hours
   const calories = Math.round(3.5 * 70 * (minutes / 60));
 
   return { pts, totalKm: +actualKm.toFixed(2), calories };

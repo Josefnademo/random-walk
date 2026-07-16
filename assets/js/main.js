@@ -278,16 +278,29 @@ function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
   // Always draw SVG fallback (instant, no tiles needed)
   drawSVGRoute(route.pts, 'route-map');
 
-  // Then init Leaflet — now the container is visible and has real size
+  // Then init Leaflet — delay so browser paints the section and
+  // the map container has real pixel dimensions before Leaflet measures it
   if (!skipMapInit && isLeafletReady()) {
-    // Small delay so the browser completes layout before Leaflet measures
+    setTimeout(() => {
+      const mapReady = initMap('leaflet-map');
+      if (mapReady) {
+        drawRouteOnMap(route.pts);
+        // First invalidate right after drawing
+        invalidateMapSize();
+        // Second invalidate for slow tile connections
+        setTimeout(() => invalidateMapSize(), 800);
+      }
+    }, 300);
+  } else if (skipMapInit && isLeafletReady()) {
+    // Restoring session — init map but skip XP award
     setTimeout(() => {
       const mapReady = initMap('leaflet-map');
       if (mapReady) {
         drawRouteOnMap(route.pts);
         invalidateMapSize();
+        setTimeout(() => invalidateMapSize(), 800);
       }
-    }, 80);
+    }, 300);
   }
 
   // Smooth scroll
@@ -542,19 +555,9 @@ function init() {
     const missionToggle = document.getElementById('mission-enabled');
     if (missionToggle) missionToggle.checked = state.missionOn;
 
-    // Show the result section with skipMapInit=true (map init runs after 80ms delay inside showResult)
+    // Show the result section — map init runs inside showResult (skipMapInit=false
+    // would give double XP, so we pass true and let the else branch init the map)
     showResult(state.route, state.minutes, state.energy, state.missionOn, true);
-
-    // Then initialize the map (skipMapInit avoids XP award but still draws the map)
-    setTimeout(() => {
-      if (isLeafletReady()) {
-        const mapReady = initMap('leaflet-map');
-        if (mapReady) {
-          drawRouteOnMap(state.route.pts);
-          invalidateMapSize();
-        }
-      }
-    }, 150);
 
     showToast('Walk restored! Your route is still active.', 'info', 3000);
   }
@@ -563,31 +566,9 @@ function init() {
   const form = document.getElementById('walk-form');
   form?.addEventListener('submit', generate);
 
-  // Map view tabs (Live Map ↔ Preview SVG)
-  const tabLive    = document.getElementById('tab-live');
-  const tabPreview = document.getElementById('tab-preview');
-  const liveWrap   = document.getElementById('leaflet-map-wrap');
-  const svgWrap    = document.getElementById('svg-map-wrap');
 
-  tabLive?.addEventListener('click', () => {
-    tabLive.classList.add('active');
-    tabPreview?.classList.remove('active');
-    tabLive.setAttribute('aria-selected', 'true');
-    tabPreview?.setAttribute('aria-selected', 'false');
-    if (liveWrap) liveWrap.hidden = false;
-    if (svgWrap)  svgWrap.hidden  = true;
-    // Leaflet needs its container to be visible before tiles load
-    invalidateMapSize();
-  });
-
-  tabPreview?.addEventListener('click', () => {
-    tabPreview.classList.add('active');
-    tabLive?.classList.remove('active');
-    tabPreview.setAttribute('aria-selected', 'true');
-    tabLive?.setAttribute('aria-selected', 'false');
-    if (svgWrap)  svgWrap.hidden  = false;
-    if (liveWrap) liveWrap.hidden = true;
-  });
+  // Note: map tab switching (Live ↔ Preview) is handled by the
+  // inline <script> in index.html to avoid module loading race conditions.
 
   // Regenerate button
   document.getElementById('regenerate')?.addEventListener('click', () => {

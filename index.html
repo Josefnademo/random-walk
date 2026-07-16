@@ -35,9 +35,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
 
-  <!-- Leaflet CSS (dark interactive map — no API key) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <!-- Leaflet CSS —— no SRI hash (CDN may serve minor patches that break hash) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
   <!-- App styles -->
   <link rel="stylesheet" href="assets/styles.css">
@@ -636,7 +635,20 @@
   <!-- Toast notification container (populated by ui.js) -->
   <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
 
-  <!-- Map tab toggle script (inline, no-module, fast) -->
+  <!-- Leaflet JS — MUST be before main.js module so L global is defined -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- App module (ES modules are deferred by default — runs after DOM is ready) -->
+  <script type="module" src="assets/js/main.js"></script>
+
+  <!-- Fallback for users with JavaScript disabled -->
+  <noscript>
+    <style>.generator-section,.challenges-section,.stats-section,.reward-section{display:none}</style>
+    <p style="text-align:center;padding:40px;color:#c7ff55">Please enable JavaScript to use the Random Walk Generator.</p>
+  </noscript>
+
+
+  <!-- Map tab toggle + live map invalidation (inline, runs before module) -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       var tabLive    = document.getElementById('tab-live');
@@ -644,17 +656,28 @@
       var liveWrap   = document.getElementById('leaflet-map-wrap');
       var svgWrap    = document.getElementById('svg-map-wrap');
 
-      function activate(tab, show, hide) {
-        tabLive.classList.toggle('active', tab === 'live');
-        tabPreview.classList.toggle('active', tab === 'preview');
-        tabLive.setAttribute('aria-selected',    tab === 'live'    ? 'true' : 'false');
-        tabPreview.setAttribute('aria-selected',  tab === 'preview' ? 'true' : 'false');
-        if (show) show.hidden = false;
-        if (hide) hide.hidden = true;
+      function activate(tab) {
+        var toLive = tab === 'live';
+        tabLive.classList.toggle('active', toLive);
+        tabPreview.classList.toggle('active', !toLive);
+        tabLive.setAttribute('aria-selected',   toLive  ? 'true' : 'false');
+        tabPreview.setAttribute('aria-selected', toLive  ? 'false' : 'true');
+        if (liveWrap) liveWrap.hidden = !toLive;
+        if (svgWrap)  svgWrap.hidden  =  toLive;
+        // Let Leaflet remeasure the container after it becomes visible
+        if (toLive && typeof L !== 'undefined') {
+          setTimeout(function() {
+            document.querySelectorAll('.leaflet-container').forEach(function(el) {
+              if (el._leaflet_id && el._leaflet_map) {
+                el._leaflet_map.invalidateSize();
+              }
+            });
+          }, 50);
+        }
       }
 
-      tabLive?.addEventListener('click',    function() { activate('live',    liveWrap, svgWrap); });
-      tabPreview?.addEventListener('click', function() { activate('preview', svgWrap, liveWrap); });
+      if (tabLive)    tabLive.addEventListener('click',    function() { activate('live'); });
+      if (tabPreview) tabPreview.addEventListener('click', function() { activate('preview'); });
     });
   </script>
 

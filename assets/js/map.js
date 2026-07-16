@@ -12,51 +12,98 @@ let markerGroup = null;
 
 /**
  * Initialize (or reinitialize) the Leaflet map.
- * @param {string} containerId - ID of the map container element
+ * @param {string} containerId
  * @returns {boolean} true if Leaflet is available and init succeeded
  */
 export function initMap(containerId) {
-  if (typeof L === 'undefined') return false;
+  if (typeof L === 'undefined') {
+    console.warn('[map] Leaflet (L) is not loaded — map unavailable');
+    return false;
+  }
 
-  // Remove existing map instance to avoid "Map container is already initialized"
+  const container = document.getElementById(containerId);
+  if (!container) return false;
+
+  // Destroy previous instance to avoid "already initialized" error
   if (leafletMap) {
     try { leafletMap.remove(); } catch {}
     leafletMap = null;
+    routeLayer  = null;
+    markerGroup = null;
   }
 
-  leafletMap = L.map(containerId, {
-    zoomControl: true,
-    attributionControl: true,
-    scrollWheelZoom: true,
-  });
+  // Remove any stale _leaflet_id that prevents re-use of the same div
+  if (container._leaflet_id) {
+    container._leaflet_id = undefined;
+  }
 
-  // CartoDB Dark Matter — no API key required
-  L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19,
-    }
-  ).addTo(leafletMap);
+  try {
+    leafletMap = L.map(container, {
+      zoomControl:       true,
+      attributionControl: true,
+      scrollWheelZoom:   true,
+    });
 
-  return true;
+    // Store reference on DOM element so inline scripts can call invalidateSize
+    container._leaflet_map = leafletMap;
+
+    // Primary tile layer — CartoDB Dark Matter (no API key, free, HTTPS)
+    const cartoDB = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains:  'abcd',
+        maxZoom:     19,
+      }
+    );
+
+    // Fallback tile layer — standard OSM tiles (most widely available)
+    const osmFallback = L.tileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom:     19,
+      }
+    );
+
+    // Try CartoDB first; fall back to OSM if tiles don't load in 5 s
+    let cartoLoaded = false;
+    const fallbackTimer = setTimeout(() => {
+      if (!cartoLoaded) {
+        console.info('[map] CartoDB tiles timeout — switching to OSM fallback');
+        leafletMap.removeLayer(cartoDB);
+        osmFallback.addTo(leafletMap);
+      }
+    }, 5000);
+
+    cartoDB.on('tileload', () => {
+      cartoLoaded = true;
+      clearTimeout(fallbackTimer);
+    });
+
+    cartoDB.addTo(leafletMap);
+
+    return true;
+  } catch (err) {
+    console.error('[map] Leaflet init error:', err);
+    return false;
+  }
 }
 
 /**
  * Draw the generated route on the Leaflet map with animated markers.
- * @param {Array<[number,number]>} points - Array of [lat, lon] pairs
+ * @param {Array<[number,number]>} points
  */
 export function drawRouteOnMap(points) {
   if (!leafletMap) return;
 
-  // Clear previous route
-  if (routeLayer)  { try { routeLayer.remove();  } catch {} routeLayer  = null; }
-  if (markerGroup) { try { markerGroup.remove(); } catch {} markerGroup = null; }
+  // Clear previous
+  if (routeLayer)  { try { leafletMap.removeLayer(routeLayer);  } catch {} routeLayer  = null; }
+  if (markerGroup) { try { leafletMap.removeLayer(markerGroup); } catch {} markerGroup = null; }
 
   markerGroup = L.layerGroup().addTo(leafletMap);
 
-  // Draw dashed route polyline
+  // Dashed route polyline in lime
   routeLayer = L.polyline(points, {
     color:     '#c7ff55',
     weight:    5,
@@ -66,7 +113,7 @@ export function drawRouteOnMap(points) {
     dashArray: '12 6',
   }).addTo(leafletMap);
 
-  // Draw markers for each point (skip closing point which equals start)
+  // Markers for each waypoint (skip the closing duplicate of start)
   points.slice(0, -1).forEach((pt, i) => {
     const isStart = i === 0;
     const html = isStart
@@ -84,14 +131,14 @@ export function drawRouteOnMap(points) {
       .addTo(markerGroup);
   });
 
-  // Fit the map to the route bounds with padding
+  // Fit map to route bounds
   const bounds = L.latLngBounds(points);
-  leafletMap.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.0 });
+  leafletMap.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 0.8 });
 }
 
 export function invalidateMapSize() {
   if (leafletMap) {
-    setTimeout(() => leafletMap.invalidateSize(), 100);
+    leafletMap.invalidateSize({ animate: false });
   }
 }
 
@@ -99,22 +146,19 @@ export function isLeafletReady() {
   return typeof L !== 'undefined';
 }
 
-// ─── SVG Fallback Map ─────────────────────────────────────────────────────────
+// ─── SVG Preview Map ──────────────────────────────────────────────────────────
 
 /**
- * Render an animated SVG route preview.
- * Used when Leaflet is not available or as a secondary preview.
- *
+ * Render an animated SVG route preview (used as the "Preview" tab).
  * @param {Array<[number,number]>} points - [lat, lon] pairs
- * @param {string} svgId - ID of the root SVG element
+ * @param {string} svgId
  */
 export function drawSVGRoute(points, svgId = 'route-map') {
   const svg = document.getElementById(svgId);
-  if (!svg) return;
+  if (!svg || points.length < 2) return;
 
   const W = 700, H = 440, PAD = 55;
 
-  // Map real-world coords to SVG viewport
   const lats = points.map(p => p[0]);
   const lons  = points.map(p => p[1]);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
@@ -123,7 +167,6 @@ export function drawSVGRoute(points, svgId = 'route-map') {
   const spanLat = maxLat - minLat || 0.001;
   const spanLon  = maxLon  - minLon  || 0.001;
 
-  // Maintain aspect ratio
   const scaleX = (W - PAD * 2) / spanLon;
   const scaleY = (H - PAD * 2) / spanLat;
   const scale  = Math.min(scaleX, scaleY);
@@ -133,7 +176,7 @@ export function drawSVGRoute(points, svgId = 'route-map') {
 
   const svgPts = points.map(p => [toX(p[1]), toY(p[0])]);
 
-  // Build smooth quadratic bezier path
+  // Smooth bezier path
   let d = `M ${svgPts[0][0].toFixed(1)} ${svgPts[0][1].toFixed(1)}`;
   for (let i = 1; i < svgPts.length; i++) {
     const prev = svgPts[i - 1];
@@ -146,23 +189,21 @@ export function drawSVGRoute(points, svgId = 'route-map') {
   const routePath   = svg.querySelector('#route-path');
   const routeShadow = svg.querySelector('#route-shadow');
 
-  // Render background grid
+  // Background grid
   const gridEl = svg.querySelector('#grid');
   if (gridEl && !gridEl.children.length) {
     gridEl.innerHTML = Array.from({ length: 11 }, (_, i) =>
-      `<path d="M ${i * 70} 0 V 440" stroke="#fff" opacity=".03"/>` +
-      `<path d="M 0 ${i * 44} H 700" stroke="#fff" opacity=".03"/>`
+      `<path d="M ${i * 70} 0 V 440" stroke="#fff" opacity=".04"/>` +
+      `<path d="M 0 ${i * 44} H 700" stroke="#fff" opacity=".04"/>`
     ).join('');
   }
 
   if (routePath) {
     routePath.setAttribute('d', d);
-    // Animate the stroke drawing
     const len = routePath.getTotalLength?.() || 1200;
     routePath.style.strokeDasharray  = len;
     routePath.style.strokeDashoffset = len;
-    // Force reflow then animate
-    void routePath.getBoundingClientRect();
+    void routePath.getBoundingClientRect(); // force reflow
     routePath.style.transition = 'stroke-dashoffset 2s cubic-bezier(0.4,0,0.2,1)';
     routePath.style.strokeDashoffset = '0';
   }
@@ -170,7 +211,7 @@ export function drawSVGRoute(points, svgId = 'route-map') {
     routeShadow.setAttribute('d', d);
   }
 
-  // Render waypoint dots
+  // Waypoint dots with pop-in animation
   const group = svg.querySelector('#route-points');
   if (group) {
     group.innerHTML = svgPts.slice(0, -1).map((p, i) => {
