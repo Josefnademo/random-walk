@@ -8,8 +8,8 @@ import { SITE_URL } from './config.js';
 import { Storage  } from './storage.js';
 import { getPosition, checkPermission, accuracyLabel } from './geo.js';
 import { buildRoute, googleUrl, osmUrl, directionSteps, walkXP, fmtDistance } from './route.js';
-import { initMap, drawRouteOnMap, drawSVGRoute, invalidateMapSize, isLeafletReady } from './map.js';
-import { getDailyChallenges, getChallengeState, completeChallenge, isChallengeCompleted, RARITY } from './challenges.js';
+import { initMap, drawRouteOnMap, drawSVGRoute, invalidateMapSize, isLeafletReady, updateUserLocationOnMap, clearUserMarker } from './map.js';
+import { getDailyChallenges, getChallengeState, completeChallenge, isChallengeCompleted, RARITY, CHALLENGE_POOL, CATEGORIES } from './challenges.js';
 import { addXP, getLevelFromXP, getProgressInfo, getTitle, checkAchievements, ACHIEVEMENTS } from './gamification.js';
 import { generateShareCard, downloadCard, shareNative, copyInviteLink, qrCodeUrl } from './share.js';
 import {
@@ -30,6 +30,11 @@ const state = {
   mission:       '',
   lastShareCard: null,  // HTMLCanvasElement
 };
+
+// ─── GPS Live Tracking State ──────────────────────────────────────────────────
+let gpsWatcher = null;
+let userCoords = null;
+let autoCenter = true;
 
 // ─── Session persistence ──────────────────────────────────────────────────────
 // Saves the active walk to sessionStorage so navigating away and back
@@ -136,55 +141,129 @@ function updateXPUI(xp, animate = false) {
 
 // ─── Daily Challenges ────────────────────────────────────────────────────────
 
+// ─── Challenge Deck State ────────────────────────────────────────────────────
+
+let activeCategory = 'today';
+let activeIndex = 0;
+let filteredChallenges = [];
+const flippedCardIds = new Set();
+
 function renderChallenges() {
-  const container = document.getElementById('challenges-list');
+  const container = document.getElementById('challenges-slider-track');
   if (!container) return;
 
-  const challenges  = getDailyChallenges();
-  const chState     = getChallengeState();
-  const acceptedId  = sessionStorage.getItem('acceptedChallenge');
+  const chState    = getChallengeState();
+  const acceptedId = sessionStorage.getItem('acceptedChallenge');
 
-  container.innerHTML = challenges.map(ch => {
-    const r    = RARITY[ch.rarity];
+  // 1. Get challenges based on category filter
+  if (activeCategory === 'today') {
+    filteredChallenges = getDailyChallenges();
+  } else {
+    filteredChallenges = CHALLENGE_POOL.filter(c => c.category === activeCategory);
+  }
+
+  // Bound activeIndex
+  if (activeIndex >= filteredChallenges.length) {
+    activeIndex = Math.max(0, filteredChallenges.length - 1);
+  }
+
+  // 2. Render cards HTML with 3D Flip capability
+  container.innerHTML = filteredChallenges.map((ch, idx) => {
+    const r = RARITY[ch.rarity];
     const done = !!chState.completed[ch.id];
     const isAccepted = acceptedId === ch.id;
+    const isFlipped = flippedCardIds.has(ch.id) || done || isAccepted;
+    
+    const catInfo = CATEGORIES[ch.category] || { icon: '🧭', title: 'Exploration' };
+    const details = ch.details || ch.desc;
 
     return `
-      <article class="challenge-card ${done ? 'challenge-done' : ''} ${isAccepted ? 'challenge-accepted' : ''}"
-               data-id="${ch.id}"
-               data-rarity="${ch.rarity}"
-               style="--rarity-color:${r.color};--rarity-bg:${r.bg};--rarity-border:${r.border}">
-        <header class="challenge-header">
-          <span class="challenge-rarity">${r.label}</span>
-          ${done ? '<span class="challenge-checkmark" aria-label="Completed">✓</span>' : ''}
-          ${isAccepted && !done ? '<span class="challenge-active-badge">ACTIVE ▶</span>' : ''}
-        </header>
-        <div class="challenge-icon" aria-hidden="true">${ch.icon}</div>
-        <h3 class="challenge-title">${ch.title}</h3>
-        <p class="challenge-desc">${ch.desc}</p>
-        <footer class="challenge-footer">
-          <span class="challenge-xp">+${ch.xp} XP</span>
-          ${ch.est ? `<span class="challenge-est">~${ch.est} min</span>` : ''}
-        </footer>
-        ${done
-          ? '<div class="challenge-complete-label">Completed! ✓</div>'
-          : isAccepted
-            ? '<div class="challenge-active-label">Challenge active — complete your walk to earn XP</div>'
-            : `<button class="challenge-accept-btn" data-id="${ch.id}" aria-label="Accept ${ch.title}">Accept Challenge</button>`
-        }
-      </article>`;
+      <div class="challenge-card-wrapper ${idx === activeIndex ? 'active' : 'inactive'}" data-index="${idx}">
+        <article class="card-3d ${isFlipped ? 'flipped' : ''} ${done ? 'completed-card' : ''}" data-id="${ch.id}">
+          <div class="card-3d-inner" style="--rarity-color:${r.color};--rarity-bg:${r.bg};--rarity-border:${r.border}">
+            
+            <!-- FRONT FACE (Mystery Face-down Card) -->
+            <div class="card-front">
+              <div class="card-front-pattern"></div>
+              <div class="card-front-glow">
+                <span class="card-front-logo">${catInfo.icon}</span>
+              </div>
+              <span class="card-front-hint">${catInfo.title}</span>
+              <span class="card-front-tap">Reveal Quest</span>
+            </div>
+
+            <!-- BACK FACE (Challenge revealed details) -->
+            <div class="card-back">
+              <div class="card-back-header">
+                <span class="card-back-rarity">${r.label}</span>
+                ${done 
+                  ? '<span class="card-back-checkmark" aria-label="Completed">✓</span>' 
+                  : isAccepted 
+                    ? '<span class="card-back-active-badge">ACTIVE</span>' 
+                    : ''
+                }
+              </div>
+              <div>
+                <div class="card-back-icon">${ch.icon}</div>
+                <h3 class="card-back-title">${ch.title}</h3>
+                <p class="card-back-desc">${ch.desc}</p>
+              </div>
+              <p class="card-back-details">${details}</p>
+              <div>
+                <div class="card-back-footer">
+                  <span class="card-back-xp">+${ch.xp} XP</span>
+                  ${ch.est ? `<span class="card-back-est">~${ch.est} min</span>` : ''}
+                </div>
+                ${done
+                  ? '<div class="card-back-status-msg completed">Completed! ✓</div>'
+                  : isAccepted
+                    ? '<div class="card-back-status-msg active">Quest is Active</div>'
+                    : `<button class="card-back-btn" data-id="${ch.id}" aria-label="Accept Quest">Accept Quest</button>`
+                }
+              </div>
+            </div>
+
+          </div>
+        </article>
+      </div>`;
   }).join('');
 
-  // Accept buttons
-  container.querySelectorAll('.challenge-accept-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // 3. Update deck navigation buttons
+  const prevBtn = document.getElementById('deck-prev');
+  const nextBtn = document.getElementById('deck-next');
+  if (prevBtn) prevBtn.disabled = activeIndex <= 0;
+  if (nextBtn) nextBtn.disabled = activeIndex >= filteredChallenges.length - 1;
+
+  // 4. Transform slider track to focus on active card
+  const cardHeight = 416; // height + gap/margin
+  container.style.transform = `translateY(-${activeIndex * cardHeight}px)`;
+
+  // 5. Setup Card Click Listeners for 3D flipping
+  container.querySelectorAll('.card-3d').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // If click was on the accept button, skip flipping back
+      if (e.target.classList.contains('card-back-btn')) return;
+
+      const id = card.dataset.id;
+      if (!flippedCardIds.has(id)) {
+        flippedCardIds.add(id);
+        card.classList.add('flipped');
+        
+        // Display toast when quest card is revealed
+        const questTitle = card.querySelector('.card-back-title')?.textContent || 'New Quest';
+        showToast(`Revealed: "${questTitle}"`, 'xp', 2200);
+      }
+    });
+  });
+
+  // 6. Setup Accept Button Listeners
+  container.querySelectorAll('.card-back-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // prevent card flip triggers
       const id = btn.dataset.id;
-      const ch = challenges.find(c => c.id === id);
+      const ch = filteredChallenges.find(c => c.id === id);
 
-      // Save accepted challenge
       sessionStorage.setItem('acceptedChallenge', id);
-
-      // Instant visual feedback — re-render challenges
       renderChallenges();
 
       showToast(`✓ "${ch?.title}" accepted! Generate a walk to start.`, 'success', 4500);
@@ -238,6 +317,70 @@ function renderStats() {
   set('stats-level-2',  s.level);
 }
 
+// ─── GPS Live Tracking Watcher ────────────────────────────────────────────────
+
+function stopGPSWatching() {
+  if (gpsWatcher) {
+    navigator.geolocation.clearWatch(gpsWatcher);
+    gpsWatcher = null;
+  }
+  clearUserMarker();
+  const trackBtn = document.querySelector('.leaflet-control-track');
+  if (trackBtn) trackBtn.classList.remove('tracking-active');
+}
+
+function startGPSWatching() {
+  if (!navigator.geolocation) return;
+  stopGPSWatching();
+
+  autoCenter = true;
+  const trackBtn = document.querySelector('.leaflet-control-track');
+  if (trackBtn) trackBtn.classList.add('tracking-active');
+
+  gpsWatcher = navigator.geolocation.watchPosition(
+    (pos) => {
+      userCoords = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+      };
+      
+      // Update state position
+      state.position = pos.coords;
+      
+      // Update Live Map pulsing marker
+      if (isLeafletReady()) {
+        updateUserLocationOnMap(userCoords.lat, userCoords.lon, userCoords.accuracy);
+        
+        // Auto-center map if enabled
+        const mapEl = document.getElementById('leaflet-map');
+        if (mapEl && mapEl._leaflet_map && autoCenter) {
+          mapEl._leaflet_map.setView([userCoords.lat, userCoords.lon], Math.max(16, mapEl._leaflet_map.getZoom()));
+        }
+      }
+    },
+    (err) => {
+      console.warn('[gps] Live tracking error:', err);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+// Attach tracking center click handler to window
+window.onMapTrackClick = () => {
+  autoCenter = !autoCenter;
+  const trackBtn = document.querySelector('.leaflet-control-track');
+  if (trackBtn) {
+    trackBtn.classList.toggle('tracking-active', autoCenter);
+  }
+  if (autoCenter && userCoords) {
+    const mapEl = document.getElementById('leaflet-map');
+    if (mapEl && mapEl._leaflet_map) {
+      mapEl._leaflet_map.setView([userCoords.lat, userCoords.lon], Math.max(16, mapEl._leaflet_map.getZoom()));
+    }
+  }
+};
+
 // ─── Result Section ───────────────────────────────────────────────────────────
 
 function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
@@ -289,6 +432,9 @@ function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
         invalidateMapSize();
         // Second invalidate for slow tile connections
         setTimeout(() => invalidateMapSize(), 800);
+        
+        // Start watching position and tracking user
+        startGPSWatching();
       }
     }, 300);
   } else if (skipMapInit && isLeafletReady()) {
@@ -299,6 +445,9 @@ function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
         drawRouteOnMap(route.pts);
         invalidateMapSize();
         setTimeout(() => invalidateMapSize(), 800);
+        
+        // Start watching position and tracking user
+        startGPSWatching();
       }
     }, 300);
   }
@@ -365,8 +514,8 @@ async function completeWalk() {
     const didComplete = completeChallenge(acceptedId);
     sessionStorage.removeItem('acceptedChallenge');
     if (didComplete) {
-      const challenges = getDailyChallenges();
-      const ch = challenges.find(c => c.id === acceptedId);
+      // Find within all pool challenges
+      const ch = CHALLENGE_POOL.find(c => c.id === acceptedId) || getDailyChallenges().find(c => c.id === acceptedId);
       if (ch) {
         addXP(ch.xp);
         showToast(`Challenge "${ch.title}" completed! +${ch.xp} XP`, 'success');
@@ -376,6 +525,7 @@ async function completeWalk() {
 
   // Clear session — walk is done
   clearSession();
+  stopGPSWatching();
 
   // Hide result, show reward
   const resultSection = document.getElementById('result');
@@ -567,8 +717,66 @@ function init() {
   form?.addEventListener('submit', generate);
 
 
-  // Note: map tab switching (Live ↔ Preview) is handled by the
-  // inline <script> in index.html to avoid module loading race conditions.
+  // ─── Challenge categories selection ───
+  document.querySelectorAll('.category-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.category-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      activeCategory = tab.dataset.category || 'today';
+      activeIndex = 0; // reset to top card
+      renderChallenges();
+    });
+  });
+
+  // ─── Deck navigation buttons ───
+  document.getElementById('deck-prev')?.addEventListener('click', () => {
+    if (activeIndex > 0) {
+      activeIndex--;
+      renderChallenges();
+    }
+  });
+
+  document.getElementById('deck-next')?.addEventListener('click', () => {
+    if (activeIndex < filteredChallenges.length - 1) {
+      activeIndex++;
+      renderChallenges();
+    }
+  });
+
+  // ─── Map view tab switching ───
+  const tabLive    = document.getElementById('tab-live');
+  const tabPreview = document.getElementById('tab-preview');
+  const liveWrap   = document.getElementById('leaflet-map-wrap');
+  const svgWrap    = document.getElementById('svg-map-wrap');
+
+  tabLive?.addEventListener('click', () => {
+    tabLive.classList.add('active');
+    tabPreview?.classList.remove('active');
+    tabLive.setAttribute('aria-selected', 'true');
+    tabPreview?.setAttribute('aria-selected', 'false');
+    if (liveWrap) liveWrap.hidden = false;
+    if (svgWrap)  svgWrap.hidden  = true;
+    invalidateMapSize();
+  });
+
+  tabPreview?.addEventListener('click', () => {
+    tabPreview.classList.add('active');
+    tabLive?.classList.remove('active');
+    tabPreview.setAttribute('aria-selected', 'true');
+    tabLive?.setAttribute('aria-selected', 'false');
+    if (svgWrap)  svgWrap.hidden  = false;
+    if (liveWrap) liveWrap.hidden = true;
+    
+    // Draw SVG route when tab is visible to avoid 0-client height path collapse bugs
+    if (state.route?.pts) {
+      drawSVGRoute(state.route.pts, 'route-map');
+    }
+  });
 
   // Regenerate button
   document.getElementById('regenerate')?.addEventListener('click', () => {

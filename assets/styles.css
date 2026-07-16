@@ -551,154 +551,427 @@ legend small { color: var(--muted); font-weight: 400; margin-left: 6px; font-siz
    ══════════════════════════════════════════════════════════════ */
 .challenges-section {
   padding: 80px 24px;
-  max-width: var(--max);
+  max-width: 800px;
   margin: 0 auto;
 }
-.section-header {
+
+/* Category Filter Tabs (Pills) */
+.challenges-categories {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 32px;
-  gap: 16px;
+  justify-content: center;
   flex-wrap: wrap;
+  padding: 6px;
+  background: rgba(13, 16, 24, 0.6);
+  border: 1px solid var(--line);
+  border-radius: 40px;
+  backdrop-filter: blur(8px);
 }
-.section-header h2 { margin-top: 8px; }
-.challenges-refresh { font-size: 0.78rem; color: var(--muted); }
-
-.challenges-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+.category-tab {
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--fast) var(--spring);
+}
+.category-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+.category-tab.active {
+  background: var(--lime);
+  color: #0c0e15;
+  box-shadow: 0 0 16px rgba(199, 255, 85, 0.35);
+  transform: scale(1.03);
 }
 
-/* Challenge Card */
-.challenge-card {
-  position: relative;
-  background: var(--card);
-  border: 1px solid var(--rarity-border, var(--line-2));
-  border-radius: var(--radius-lg);
-  padding: 24px;
+/* 3D Vertical Deck Carousel */
+.challenges-deck-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: transform var(--mid) var(--spring), box-shadow var(--mid) var(--ease), background var(--mid);
-  overflow: hidden;
+  align-items: center;
+  gap: 16px;
+  position: relative;
 }
-.challenge-card::before {
+.deck-nav-btn {
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  color: var(--text-2);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all var(--fast) var(--spring);
+}
+.deck-nav-btn:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+  background: var(--lime-dim);
+  transform: scale(1.1);
+}
+.deck-nav-btn:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.challenges-viewport {
+  width: 100%;
+  max-width: 380px;
+  height: 450px;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+}
+
+.challenges-slider-track {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* 3D Card wrapper and perspective container */
+.challenge-card-wrapper {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+/* Slide Offsets & Scales (controlled via JS based on active index) */
+.challenge-card-wrapper.inactive {
+  opacity: 0.35;
+  transform: scale(0.85);
+  pointer-events: none;
+}
+
+/* Card Structure */
+.card-3d {
+  width: 320px;
+  height: 400px;
+  position: relative;
+  cursor: pointer;
+}
+
+.card-3d-inner {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1.15), box-shadow 0.5s;
+  border-radius: var(--radius-xl);
+}
+
+/* Lift on hover */
+.card-3d:hover .card-3d-inner {
+  transform: translateY(-8px);
+}
+
+/* Hop and Flip State */
+.card-3d.flipped .card-3d-inner {
+  transform: rotateY(180deg) translateY(-4px);
+}
+
+/* Front (Locked/Mysterious) Face */
+.card-front, .card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  border: 1.5px solid var(--rarity-border, var(--line-2));
+}
+
+.card-front {
+  background: radial-gradient(circle at 50% 50%, #151a26 0%, #0a0c10 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Futuristic mystery patterns */
+.card-front-pattern {
+  position: absolute;
+  inset: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: calc(var(--radius-xl) - 4px);
+  pointer-events: none;
+}
+.card-front-pattern::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--rarity-bg, transparent);
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity var(--mid);
+  background: repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(199, 255, 85, 0.02) 15px, rgba(199, 255, 85, 0.02) 30px);
 }
-.challenge-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
-.challenge-card:hover::before { opacity: 1; }
 
-.challenge-header {
+.card-front-glow {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(199, 255, 85, 0.15) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: glow-pulse 2s ease-in-out infinite alternate;
+}
+@keyframes glow-pulse {
+  from { transform: scale(0.9); opacity: 0.7; }
+  to { transform: scale(1.1); opacity: 1; }
+}
+
+.card-front-logo {
+  font-size: 3.2rem;
+  filter: drop-shadow(0 0 10px rgba(199, 255, 85, 0.4));
+}
+.card-front-hint {
+  font-size: 0.73rem;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.card-front-tap {
+  position: absolute;
+  bottom: 24px;
+  font-size: 0.65rem;
+  color: var(--lime);
+  border: 1px solid rgba(199, 255, 85, 0.2);
+  background: rgba(199, 255, 85, 0.05);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Back (Quest Details) Face */
+.card-back {
+  background: var(--panel);
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  justify-content: space-between;
+}
+
+.card-back-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.challenge-rarity {
-  font-size: 0.65rem;
+.card-back-rarity {
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--rarity-color, var(--muted));
 }
-.challenge-checkmark {
+.card-back-checkmark {
   width: 22px; height: 22px;
   background: var(--success);
   color: #0c0e15;
   border-radius: 50%;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.challenge-icon { font-size: 2rem; line-height: 1; margin: 4px 0; }
-.challenge-title { font-size: 1rem; font-weight: 800; }
-.challenge-desc  { font-size: 0.82rem; color: var(--text-2); line-height: 1.5; flex: 1; }
-.challenge-footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.card-back-active-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: var(--lime);
+  color: #0c0e15;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 900;
+}
+
+.card-back-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  margin: 10px 0 4px 0;
+}
+.card-back-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.card-back-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
   margin-top: 4px;
 }
-.challenge-xp {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--rarity-color, var(--lime));
-  background: var(--rarity-bg, var(--lime-dim));
-  padding: 3px 10px;
-  border-radius: 20px;
+
+.card-back-details {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  line-height: 1.45;
+  flex: 1;
+  margin: 12px 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
-.challenge-est {
+.card-back-details::-webkit-scrollbar {
+  width: 3px;
+}
+.card-back-details::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 3px;
+}
+
+.card-back-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.card-back-xp {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--rarity-color, var(--lime));
+  background: var(--rarity-bg, rgba(199, 255, 85, 0.08));
+  padding: 4px 10px;
+  border-radius: 16px;
+}
+.card-back-est {
   font-size: 0.75rem;
   color: var(--muted);
+  font-weight: 600;
 }
-.challenge-accept-btn {
+
+/* Card back accept/complete states */
+.card-back-btn {
   margin-top: 12px;
   width: 100%;
-  padding: 10px;
+  padding: 11px;
   background: var(--rarity-bg, var(--lime-dim));
   border: 1px solid var(--rarity-border, var(--lime-glow));
   color: var(--rarity-color, var(--lime));
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: 0.82rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background var(--fast), transform var(--fast) var(--spring);
-}
-.challenge-accept-btn:hover { background: var(--card-hover); transform: translateY(-1px); }
-.challenge-complete-label {
-  margin-top: 12px;
-  text-align: center;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--success);
-}
-.challenge-done { opacity: 0.7; }
-.challenge-done .challenge-title { text-decoration: line-through; text-decoration-color: var(--muted); }
-
-/* Accepted / active challenge state */
-.challenge-accepted {
-  border-color: var(--lime) !important;
-  box-shadow: 0 0 0 2px rgba(199,255,85,0.25), 0 8px 32px rgba(199,255,85,0.12);
-  animation: challenge-pulse 2s ease-in-out infinite;
-}
-@keyframes challenge-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(199,255,85,0.25), 0 8px 32px rgba(199,255,85,0.12); }
-  50%       { box-shadow: 0 0 0 4px rgba(199,255,85,0.40), 0 8px 40px rgba(199,255,85,0.22); }
-}
-.challenge-active-badge {
-  font-size: 0.62rem;
   font-weight: 900;
-  letter-spacing: 0.1em;
-  color: #0c0e15;
+  cursor: pointer;
+  transition: all var(--fast) var(--spring);
+}
+.card-back-btn:hover {
   background: var(--lime);
-  padding: 3px 8px;
-  border-radius: 20px;
-  animation: badge-blink 1.6s ease-in-out infinite;
+  color: #0c0e15;
+  box-shadow: 0 4px 12px rgba(199, 255, 85, 0.25);
+  transform: translateY(-1px);
 }
-@keyframes badge-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.65; }
-}
-.challenge-active-label {
+.card-back-status-msg {
   margin-top: 12px;
-  padding: 10px 14px;
-  background: rgba(199,255,85,0.08);
-  border: 1px solid rgba(199,255,85,0.3);
-  border-radius: var(--radius-sm);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--lime);
+  width: 100%;
   text-align: center;
-  line-height: 1.4;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: var(--radius-md);
+}
+.card-back-status-msg.completed {
+  color: var(--success);
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+.card-back-status-msg.active {
+  color: var(--lime);
+  border: 1px dashed rgba(199, 255, 85, 0.3);
+  background: rgba(199, 255, 85, 0.05);
+}
+
+/* Completed Overlay */
+.card-3d.completed-card {
+  opacity: 0.65;
+}
+.card-3d.completed-card .card-3d-inner {
+  filter: grayscale(40%);
+}
+
+/* Leaflet User Tracking Pulsing Circle Marker styling */
+.user-position-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.user-position-pulse {
+  width: 44px;
+  height: 44px;
+  position: absolute;
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  animation: user-pulse-zoom 1.8s infinite ease-out;
+  pointer-events: none;
+}
+@keyframes user-pulse-zoom {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+/* Float tracking center button styled inside leaflet */
+.leaflet-control-track {
+  background: var(--panel) !important;
+  border: 1px solid var(--line-2) !important;
+  border-radius: var(--radius-md) !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  width: 34px !important;
+  height: 34px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  color: var(--text) !important;
+  transition: all var(--fast);
+}
+.leaflet-control-track:hover {
+  background: var(--card) !important;
+  color: var(--lime) !important;
+}
+.leaflet-control-track.tracking-active {
+  color: var(--lime) !important;
+  border-color: var(--lime) !important;
+  box-shadow: 0 0 8px rgba(199, 255, 85, 0.35) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════

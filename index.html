@@ -213,13 +213,42 @@
     <section class="challenges-section reveal" id="challenges" aria-labelledby="challenges-heading">
       <div class="section-header">
         <div>
-          <p class="eyebrow">TODAY'S CHALLENGES</p>
-          <h2 id="challenges-heading">Fresh every day</h2>
+          <p class="eyebrow">CHALLENGE DECK</p>
+          <h2 id="challenges-heading">Walk Quests &amp; Milestones</h2>
         </div>
-        <p class="challenges-refresh" aria-live="polite">Refreshes at midnight · your time</p>
+        <p class="challenges-refresh" aria-live="polite">Click cards to flip · Complete walks to claim</p>
       </div>
-      <div class="challenges-list" id="challenges-list" role="list" aria-label="Today's daily challenges">
-        <!-- Rendered by challenges.js -->
+
+      <!-- Categories Selector Header -->
+      <div class="challenges-categories" role="tablist" aria-label="Challenge categories">
+        <button class="category-tab active" data-category="today" role="tab" aria-selected="true">
+          <span>📅 Today's Quests</span>
+        </button>
+        <button class="category-tab" data-category="exploration" role="tab" aria-selected="false">
+          <span>🧭 Exploration</span>
+        </button>
+        <button class="category-tab" data-category="fitness" role="tab" aria-selected="false">
+          <span>⚡ Speed/Distance</span>
+        </button>
+        <button class="category-tab" data-category="streak" role="tab" aria-selected="false">
+          <span>🔥 Consistency</span>
+        </button>
+        <button class="category-tab" data-category="creative" role="tab" aria-selected="false">
+          <span>🎨 Creative</span>
+        </button>
+      </div>
+
+      <!-- Card Slider Wrapper -->
+      <div class="challenges-deck-container">
+        <button class="deck-nav-btn deck-prev-btn" id="deck-prev" aria-label="Previous Challenge">▲</button>
+        
+        <div class="challenges-viewport">
+          <div class="challenges-slider-track" id="challenges-slider-track">
+            <!-- Cards generated dynamically -->
+          </div>
+        </div>
+
+        <button class="deck-nav-btn deck-next-btn" id="deck-next" aria-label="Next Challenge">▼</button>
       </div>
     </section>
 
@@ -647,39 +676,6 @@
     <p style="text-align:center;padding:40px;color:#c7ff55">Please enable JavaScript to use the Random Walk Generator.</p>
   </noscript>
 
-
-  <!-- Map tab toggle + live map invalidation (inline, runs before module) -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var tabLive    = document.getElementById('tab-live');
-      var tabPreview = document.getElementById('tab-preview');
-      var liveWrap   = document.getElementById('leaflet-map-wrap');
-      var svgWrap    = document.getElementById('svg-map-wrap');
-
-      function activate(tab) {
-        var toLive = tab === 'live';
-        tabLive.classList.toggle('active', toLive);
-        tabPreview.classList.toggle('active', !toLive);
-        tabLive.setAttribute('aria-selected',   toLive  ? 'true' : 'false');
-        tabPreview.setAttribute('aria-selected', toLive  ? 'false' : 'true');
-        if (liveWrap) liveWrap.hidden = !toLive;
-        if (svgWrap)  svgWrap.hidden  =  toLive;
-        // Let Leaflet remeasure the container after it becomes visible
-        if (toLive && typeof L !== 'undefined') {
-          setTimeout(function() {
-            document.querySelectorAll('.leaflet-container').forEach(function(el) {
-              if (el._leaflet_id && el._leaflet_map) {
-                el._leaflet_map.invalidateSize();
-              }
-            });
-          }, 50);
-        }
-      }
-
-      if (tabLive)    tabLive.addEventListener('click',    function() { activate('live'); });
-      if (tabPreview) tabPreview.addEventListener('click', function() { activate('preview'); });
-    });
-  </script>
 
 </body>
 </html>

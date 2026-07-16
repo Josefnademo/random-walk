@@ -4,7 +4,7 @@
  * Compatible with GitHub Pages (project subpath).
  */
 
-const CACHE_NAME  = 'rw-v3';
+const CACHE_NAME  = 'rw-v4';
 const STATIC_URLS = [
   './',
   './index.html',

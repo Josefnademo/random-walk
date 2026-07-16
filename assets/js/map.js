@@ -26,7 +26,10 @@ export function initMap(containerId) {
 
   // Destroy previous instance to avoid "already initialized" error
   if (leafletMap) {
-    try { leafletMap.remove(); } catch {}
+    try {
+      clearUserMarker();
+      leafletMap.remove();
+    } catch {}
     leafletMap = null;
     routeLayer  = null;
     markerGroup = null;
@@ -83,10 +86,59 @@ export function initMap(containerId) {
 
     cartoDB.addTo(leafletMap);
 
+    // Add custom tracking control button
+    if (typeof L.Control.Track === 'undefined') {
+      L.Control.Track = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd: function() {
+          const btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control leaflet-control-track');
+          btn.innerHTML = '🎯';
+          btn.title = 'Center on My Location';
+          L.DomEvent.on(btn, 'click', (e) => {
+            L.DomEvent.stopPropagation(e);
+            if (window.onMapTrackClick) window.onMapTrackClick();
+          });
+          return btn;
+        }
+      });
+    }
+    new L.Control.Track().addTo(leafletMap);
+
     return true;
   } catch (err) {
     console.error('[map] Leaflet init error:', err);
     return false;
+  }
+}
+
+// Track marker instance
+let userMarker = null;
+
+/**
+ * Update or draw the user's live pulsing position marker on the Leaflet map.
+ */
+export function updateUserLocationOnMap(lat, lon, accuracy = 0) {
+  if (!leafletMap) return;
+
+  const iconHtml = `<div class="user-position-marker"><div class="user-position-pulse"></div></div>`;
+  const icon = L.divIcon({
+    className: '',
+    html:      iconHtml,
+    iconSize:   [24, 24],
+    iconAnchor: [12, 12],
+  });
+
+  if (userMarker) {
+    userMarker.setLatLng([lat, lon]);
+  } else {
+    userMarker = L.marker([lat, lon], { icon, title: 'Your Location' }).addTo(leafletMap);
+  }
+}
+
+export function clearUserMarker() {
+  if (userMarker && leafletMap) {
+    try { leafletMap.removeLayer(userMarker); } catch {}
+    userMarker = null;
   }
 }
 
