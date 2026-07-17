@@ -107,7 +107,7 @@
 
       <!-- Main navigation -->
       <nav class="main-nav" id="main-nav" aria-label="Main navigation">
-        <a href="#challenges">Challenges</a>
+        <a href="challenges.html">Challenges</a>
         <a href="#how">How it works</a>
         <a href="guides/walking-challenges.html">Guides</a>
         <a href="privacy.html">Privacy</a>
@@ -210,46 +210,29 @@
     <!-- ═══════════════════════════════════════════════════════
          DAILY CHALLENGES
          ═══════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════
+         TODAY'S CHALLENGES — compact mini carousel
+         ═══════════════════════════════════════════════════════ -->
     <section class="challenges-section reveal" id="challenges" aria-labelledby="challenges-heading">
       <div class="section-header">
         <div>
-          <p class="eyebrow">CHALLENGE DECK</p>
-          <h2 id="challenges-heading">Walk Quests &amp; Milestones</h2>
+          <p class="eyebrow">TODAY'S QUESTS</p>
+          <h2 id="challenges-heading">Daily Challenges</h2>
         </div>
-        <p class="challenges-refresh" aria-live="polite">Click cards to flip · Complete walks to claim</p>
+        <a href="challenges.html" class="view-all-link" aria-label="View all 30 walk challenges">
+          View All 30 →
+        </a>
       </div>
 
-      <!-- Categories Selector Header -->
-      <div class="challenges-categories" role="tablist" aria-label="Challenge categories">
-        <button class="category-tab active" data-category="today" role="tab" aria-selected="true">
-          <span>📅 Today's Quests</span>
-        </button>
-        <button class="category-tab" data-category="exploration" role="tab" aria-selected="false">
-          <span>🧭 Exploration</span>
-        </button>
-        <button class="category-tab" data-category="fitness" role="tab" aria-selected="false">
-          <span>⚡ Speed/Distance</span>
-        </button>
-        <button class="category-tab" data-category="streak" role="tab" aria-selected="false">
-          <span>🔥 Consistency</span>
-        </button>
-        <button class="category-tab" data-category="creative" role="tab" aria-selected="false">
-          <span>🎨 Creative</span>
-        </button>
+      <!-- Mini horizontal carousel (3 today's challenges) -->
+      <div class="mini-carousel" id="mini-challenges" role="list" aria-label="Today's daily challenges">
+        <!-- Rendered by main.js renderChallenges() -->
       </div>
 
-      <!-- Card Slider Wrapper -->
-      <div class="challenges-deck-container">
-        <button class="deck-nav-btn deck-prev-btn" id="deck-prev" aria-label="Previous Challenge">▲</button>
-        
-        <div class="challenges-viewport">
-          <div class="challenges-slider-track" id="challenges-slider-track">
-            <!-- Cards generated dynamically -->
-          </div>
-        </div>
-
-        <button class="deck-nav-btn deck-next-btn" id="deck-next" aria-label="Next Challenge">▼</button>
-      </div>
+      <a href="challenges.html" class="explore-all-btn" aria-label="Explore all walking challenges">
+        <span>🃏 Explore All Challenges</span>
+        <span class="btn-arrow" aria-hidden="true">→</span>
+      </a>
     </section>
 
     <!-- ═══════════════════════════════════════════════════════
@@ -267,37 +250,27 @@
       <!-- Map type toggle -->
       <div class="map-tabs" role="tablist" aria-label="Map view">
         <button class="map-tab active" id="tab-live" role="tab" aria-selected="true"  aria-controls="leaflet-map-wrap">Live Map</button>
-        <button class="map-tab"        id="tab-preview" role="tab" aria-selected="false" aria-controls="svg-map-wrap">Preview</button>
+        <button class="map-tab"        id="tab-preview" role="tab" aria-selected="false" aria-controls="preview-map-wrap">Preview</button>
       </div>
 
       <div class="result-grid">
         <!-- Map column -->
         <div>
-          <!-- Leaflet real map -->
+          <!-- Live Leaflet map with fullscreen button -->
           <article class="map-card" id="leaflet-map-wrap">
             <div id="leaflet-map" aria-label="Interactive walking route map"></div>
+            <button class="map-fullscreen-btn" id="map-fullscreen-btn"
+                    aria-label="Toggle fullscreen map" title="Fullscreen">⛶</button>
             <p class="map-warning" role="note">
-              Preview only — verify actual streets, access, and safety in your map app before walking.
+              Preview only — verify streets and safety in your map app before walking.
             </p>
           </article>
 
-          <!-- SVG fallback (shown when Leaflet fails or user picks Preview tab) -->
-          <article class="map-card" id="svg-map-wrap" hidden>
-            <svg id="route-map" viewBox="0 0 700 440" role="img" aria-label="Abstract preview of generated walking route">
-              <defs>
-                <linearGradient id="routeGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0"   stop-color="#c7ff55"/>
-                  <stop offset="0.5" stop-color="#60b8ff"/>
-                  <stop offset="1"   stop-color="#a78bfa"/>
-                </linearGradient>
-              </defs>
-              <g id="grid" aria-hidden="true"></g>
-              <path id="route-shadow"/>
-              <path id="route-path"/>
-              <g id="route-points"></g>
-            </svg>
+          <!-- Preview tab: second Leaflet map (read-only, no GPS tracking) -->
+          <article class="map-card" id="preview-map-wrap" hidden>
+            <div id="leaflet-preview" aria-label="Static route preview map"></div>
             <p class="map-warning" role="note">
-              Abstract preview only — open in Google Maps for actual walking directions.
+              Route preview — open in Google Maps for actual walking directions.
             </p>
           </article>
         </div>

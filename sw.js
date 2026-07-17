@@ -4,7 +4,7 @@
  * Compatible with GitHub Pages (project subpath).
  */
 
-const CACHE_NAME  = 'rw-v4';
+const CACHE_NAME  = 'rw-v5';
 const STATIC_URLS = [
   './',
   './index.html',
@@ -19,8 +19,11 @@ const STATIC_URLS = [
   './assets/js/gamification.js',
   './assets/js/share.js',
   './assets/js/ui.js',
+  './assets/js/challenges-page.js',
+  './assets/challenges-page.css',
   './assets/icon.svg',
   './manifest.webmanifest',
+  './challenges.html',
   './404.html',
   './privacy.html',
   './about.html',

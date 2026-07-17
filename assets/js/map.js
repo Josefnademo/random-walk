@@ -198,6 +198,94 @@ export function isLeafletReady() {
   return typeof L !== 'undefined';
 }
 
+// ─── Preview (2nd Leaflet instance — read-only, no GPS tracking) ─────────────
+
+let previewMap        = null;
+let previewRouteLayer = null;
+
+/**
+ * Initialize a static Leaflet map for the Preview tab.
+ * No tracking controls, no GPS marker — just tiles + route.
+ */
+export function initPreviewMap(containerId) {
+  if (typeof L === 'undefined') return false;
+
+  const container = document.getElementById(containerId);
+  if (!container) return false;
+
+  // Destroy stale instance
+  if (previewMap) {
+    try { previewMap.remove(); } catch {}
+    previewMap = null;
+    previewRouteLayer = null;
+  }
+  if (container._leaflet_id) container._leaflet_id = undefined;
+
+  try {
+    previewMap = L.map(container, {
+      zoomControl:        true,
+      attributionControl: false,
+      scrollWheelZoom:    false,
+      dragging:           true,
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom:    19,
+    }).addTo(previewMap);
+
+    return true;
+  } catch (err) {
+    console.error('[map] Preview map init error:', err);
+    return false;
+  }
+}
+
+/**
+ * Draw the route on the preview map (lime dashed polyline + numbered markers).
+ */
+export function drawRouteOnPreviewMap(points) {
+  if (!previewMap || !points?.length) return;
+
+  if (previewRouteLayer) {
+    try { previewMap.removeLayer(previewRouteLayer); } catch {}
+    previewRouteLayer = null;
+  }
+
+  const group = L.layerGroup().addTo(previewMap);
+
+  L.polyline(points, {
+    color:     '#c7ff55',
+    weight:    4,
+    opacity:   0.9,
+    dashArray: '10 5',
+    lineCap:   'round',
+  }).addTo(group);
+
+  points.slice(0, -1).forEach((pt, i) => {
+    const isStart = i === 0;
+    const html = isStart
+      ? `<div class="map-marker map-marker-start"><span>GO</span></div>`
+      : `<div class="map-marker map-marker-wp"><span>${i}</span></div>`;
+
+    L.marker(pt, {
+      icon: L.divIcon({
+        className: '',
+        html,
+        iconSize:   isStart ? [44, 44] : [30, 30],
+        iconAnchor: isStart ? [22, 22] : [15, 15],
+      }),
+    }).addTo(group);
+  });
+
+  previewRouteLayer = group;
+  previewMap.fitBounds(L.latLngBounds(points), { padding: [40, 40], animate: false });
+}
+
+export function invalidatePreviewMapSize() {
+  if (previewMap) previewMap.invalidateSize({ animate: false });
+}
+
 // ─── SVG Preview Map ──────────────────────────────────────────────────────────
 
 /**

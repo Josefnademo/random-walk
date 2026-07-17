@@ -1,0 +1,476 @@
+/* ═══════════════════════════════════════════════════════════
+   CHALLENGES PAGE — Dedicated styles for challenges.html
+   Full-screen 3D flip card deck with side navigation arrows
+   ═══════════════════════════════════════════════════════════ */
+
+.challenges-page-body {
+  background: var(--bg);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Page Hero ─────────────────────────────────────────── */
+
+.ch-page-hero {
+  padding: 56px 24px 32px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% -10%, rgba(199,255,85,0.1) 0%, transparent 70%),
+    var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.ch-page-hero-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ch-page-title {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #eef0f6 0%, #c7ff55 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 8px 0 12px;
+  line-height: 1.1;
+}
+
+.ch-page-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── Category Filter Tabs ──────────────────────────────── */
+
+.ch-page-categories {
+  display: flex;
+  gap: 8px;
+  padding: 20px 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  background: rgba(13,16,24,0.8);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 64px;
+  z-index: 50;
+}
+
+.ch-cat-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 28px;
+  border: 1px solid var(--line-2);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s var(--spring);
+  white-space: nowrap;
+}
+
+.ch-cat-btn:hover {
+  border-color: rgba(199,255,85,0.35);
+  color: var(--text);
+  background: rgba(199,255,85,0.05);
+  transform: translateY(-1px);
+}
+
+.ch-cat-btn.active {
+  background: var(--lime);
+  color: #0b0d12;
+  border-color: var(--lime);
+  box-shadow: 0 0 20px rgba(199,255,85,0.3);
+  transform: scale(1.04);
+}
+
+.ch-cat-icon  { font-size: 1rem; }
+.ch-cat-label { font-weight: 800; }
+
+.ch-cat-count {
+  background: rgba(0,0,0,0.25);
+  color: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 12px;
+  min-width: 22px;
+  text-align: center;
+}
+.ch-cat-btn.active .ch-cat-count {
+  background: rgba(0,0,0,0.2);
+}
+
+/* ── Deck Wrapper ──────────────────────────────────────── */
+
+.ch-deck-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px 16px;
+  flex: 1;
+  min-height: 580px;
+}
+
+/* ── Side Nav Arrows ───────────────────────────────────── */
+
+.ch-arrow {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--line-2);
+  background: var(--panel);
+  color: var(--text-2);
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s var(--spring);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+
+.ch-arrow:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+  background: var(--lime-dim);
+  transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(199,255,85,0.2);
+}
+
+.ch-arrow:disabled {
+  opacity: 0.2;
+  pointer-events: none;
+  transform: none;
+}
+
+/* ── Viewport + Track ──────────────────────────────────── */
+
+.ch-viewport {
+  width: min(520px, 90vw);
+  height: 520px;
+  overflow: hidden;
+  position: relative;
+  border-radius: var(--radius-xl);
+}
+
+.ch-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.55s cubic-bezier(0.19, 1, 0.22, 1);
+  will-change: transform;
+}
+
+/* ── Individual Card Slot ──────────────────────────────── */
+
+.ch-card-slot {
+  width: 100%;
+  height: 520px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+}
+
+/* ── 3D Flip Card ──────────────────────────────────────── */
+
+.ch-card {
+  width: min(460px, 88vw);
+  height: 490px;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ch-card-inner {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1.1);
+  border-radius: var(--radius-xl);
+}
+
+.ch-card:hover .ch-card-inner:not(.is-flipped) {
+  transform: translateY(-6px) rotateY(5deg);
+}
+
+.ch-card.flipped .ch-card-inner {
+  transform: rotateY(180deg) translateY(-4px);
+}
+
+.ch-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.5),
+    0 0 0 1.5px var(--rarity-border, var(--line-2));
+}
+
+/* ── Front Face (Mystery) ──────────────────────────────── */
+
+.ch-card-front {
+  background: radial-gradient(circle at 50% 40%, #141c2e, #080a0f);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  position: relative;
+}
+
+.ch-card-front::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 18px, rgba(199,255,85,0.015) 18px, rgba(199,255,85,0.015) 36px);
+  pointer-events: none;
+}
+
+.ch-card-front::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 1px dashed rgba(255,255,255,0.07);
+  border-radius: calc(var(--radius-xl) - 8px);
+  pointer-events: none;
+}
+
+.ch-front-glow {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(199,255,85,0.18) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ch-glow-pulse 2.2s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes ch-glow-pulse {
+  from { transform: scale(0.9); filter: brightness(0.8); }
+  to   { transform: scale(1.1); filter: brightness(1.2); }
+}
+
+.ch-front-emoji  { font-size: 3.8rem; filter: drop-shadow(0 0 14px rgba(199,255,85,0.45)); }
+.ch-front-cat    { font-size: 0.78rem; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+
+.ch-front-reveal {
+  position: absolute;
+  bottom: 26px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lime);
+  border: 1px solid rgba(199,255,85,0.25);
+  background: rgba(199,255,85,0.06);
+  padding: 6px 16px;
+  border-radius: 20px;
+  animation: ch-tap-blink 2s ease-in-out infinite;
+}
+
+@keyframes ch-tap-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Back Face (Quest Details) ─────────────────────────── */
+
+.ch-card-back {
+  background: var(--panel);
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  gap: 12px;
+}
+
+.ch-back-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ch-back-rarity {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rarity-color, var(--muted));
+}
+
+.ch-back-badge {
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.08em;
+}
+.ch-back-badge.completed { background: var(--success); color: #0b0d12; }
+.ch-back-badge.active    { background: var(--lime);    color: #0b0d12; }
+
+.ch-back-icon  { font-size: 2.5rem; line-height: 1; }
+.ch-back-title { font-size: 1.25rem; font-weight: 900; line-height: 1.2; }
+.ch-back-desc  { font-size: 0.82rem; color: var(--muted); }
+
+.ch-back-details {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  line-height: 1.55;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.ch-back-details::-webkit-scrollbar { width: 3px; }
+.ch-back-details::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 3px; }
+
+.ch-back-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.ch-back-xp {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: var(--rarity-color, var(--lime));
+  background: var(--rarity-bg, rgba(199,255,85,0.08));
+  padding: 4px 12px;
+  border-radius: 16px;
+}
+.ch-back-est { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+
+.ch-back-accept-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--rarity-bg, var(--lime-dim));
+  border: 1px solid var(--rarity-border, var(--lime-glow));
+  color: var(--rarity-color, var(--lime));
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.18s var(--spring);
+  letter-spacing: 0.04em;
+}
+.ch-back-accept-btn:hover {
+  background: var(--lime);
+  color: #0b0d12;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(199,255,85,0.25);
+}
+
+.ch-back-status {
+  width: 100%;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+}
+.ch-back-status.completed {
+  color: var(--success);
+  border: 1px dashed rgba(52,211,153,0.3);
+  background: rgba(52,211,153,0.06);
+}
+.ch-back-status.active {
+  color: var(--lime);
+  border: 1px dashed rgba(199,255,85,0.3);
+  background: rgba(199,255,85,0.06);
+  animation: ch-active-pulse 2s infinite;
+}
+@keyframes ch-active-pulse {
+  0%,100% { box-shadow: none; }
+  50%      { box-shadow: 0 0 10px rgba(199,255,85,0.2); }
+}
+
+/* ── Progress Dots + Counter ───────────────────────────── */
+
+.ch-progress-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px 40px;
+}
+
+.ch-progress-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 300px;
+}
+
+.ch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-2);
+  transition: all 0.3s var(--spring);
+  cursor: pointer;
+}
+.ch-dot.active {
+  background: var(--lime);
+  transform: scale(1.5);
+  box-shadow: 0 0 8px rgba(199,255,85,0.4);
+}
+.ch-dot.completed {
+  background: var(--success);
+}
+
+.ch-counter {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* ── Mobile Responsive ─────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .ch-page-hero { padding: 40px 20px 24px; }
+  .ch-page-categories { padding: 14px 12px; gap: 6px; top: 56px; }
+  .ch-cat-btn  { padding: 7px 12px; font-size: 0.76rem; }
+  .ch-cat-label { display: none; }
+  .ch-cat-count { display: none; }
+
+  .ch-deck-wrapper { gap: 10px; padding: 16px 8px; min-height: 500px; }
+  .ch-arrow { width: 44px; height: 44px; font-size: 1.1rem; }
+
+  .ch-viewport { height: 470px; }
+  .ch-card-slot { height: 470px; }
+  .ch-card { height: 450px; }
+  .ch-card-back { padding: 20px; gap: 8px; }
+  .ch-back-title { font-size: 1.1rem; }
+}
+
+@media (max-width: 380px) {
+  .ch-arrow { display: none; }
+  .ch-viewport { width: 94vw; }
+}

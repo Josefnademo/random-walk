@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Walk Challenges — Random Walk Generator</title>
+  <meta name="description" content="Browse 30 unique walking challenges across Exploration, Fitness, Consistency, Creative, and Mindfulness categories. Flip cards to reveal quests, accept challenges, and earn XP.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#080a0f">
+  <link rel="canonical" href="https://josefnademo.github.io/random-walk/challenges.html">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website">
+  <meta property="og:title"       content="Walk Challenges — Random Walk">
+  <meta property="og:description" content="30 unique walking challenges. Flip cards to reveal. Accept quests, earn XP.">
+  <meta property="og:url"         content="https://josefnademo.github.io/random-walk/challenges.html">
+  <meta property="og:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
+
+  <!-- Leaflet (needed for shared Storage module import chain) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/challenges-page.css">
+</head>
+<body class="challenges-page-body">
+
+  <!-- ═══════ HEADER ═══════ -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a class="brand" href="./" aria-label="Random Walk — homepage">
+        <span class="brand-dot" aria-hidden="true"></span>
+        RANDOM/WALK
+      </a>
+
+      <!-- Mobile hamburger -->
+      <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+        <a href="./">Generator</a>
+        <a href="challenges.html" class="nav-active">Challenges</a>
+        <a href="guides/walking-challenges.html">Guides</a>
+        <a href="privacy.html">Privacy</a>
+      </nav>
+
+      <!-- XP Bar -->
+      <div class="header-xp" aria-label="Your progress">
+        <span class="level-badge" id="level-badge" aria-live="polite">Lv 1</span>
+        <div class="xp-bar-track" role="progressbar" aria-label="XP progress" aria-valuemin="0" aria-valuemax="100">
+          <div class="xp-bar-fill" id="xp-bar-fill"></div>
+        </div>
+        <span class="xp-amount" id="xp-amount" aria-live="polite">0 XP</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ═══════ PAGE HERO ═══════ -->
+    <section class="ch-page-hero">
+      <div class="ch-page-hero-inner">
+        <p class="eyebrow">QUEST DECK</p>
+        <h1 class="ch-page-title">Walk Challenges</h1>
+        <p class="ch-page-subtitle">30 unique quests across 5 categories. Flip a card to reveal its challenge. Accept it, generate your walk, and earn XP.</p>
+      </div>
+    </section>
+
+    <!-- ═══════ CATEGORY FILTER TABS ═══════ -->
+    <div class="ch-page-categories" role="tablist" aria-label="Challenge categories" id="ch-categories">
+      <button class="ch-cat-btn active" data-category="all" role="tab" aria-selected="true">
+        <span class="ch-cat-icon">⚔️</span>
+        <span class="ch-cat-label">All Quests</span>
+        <span class="ch-cat-count" id="count-all">30</span>
+      </button>
+      <button class="ch-cat-btn" data-category="exploration" role="tab" aria-selected="false">
+        <span class="ch-cat-icon">🧭</span>
+        <span class="ch-cat-label">Exploration</span>
+        <span class="ch-cat-count" id="count-exploration">7</span>
+      </button>
+      <button class="ch-cat-btn" data-category="fitness" role="tab" aria-selected="false">
+        <span class="ch-cat-icon">⚡</span>
+        <span class="ch-cat-label">Speed/Distance</span>
+        <span class="ch-cat-count" id="count-fitness">7</span>
+      </button>
+      <button class="ch-cat-btn" data-category="streak" role="tab" aria-selected="false">
+        <span class="ch-cat-icon">🔥</span>
+        <span class="ch-cat-label">Consistency</span>
+        <span class="ch-cat-count" id="count-streak">7</span>
+      </button>
+      <button class="ch-cat-btn" data-category="creative" role="tab" aria-selected="false">
+        <span class="ch-cat-icon">🎨</span>
+        <span class="ch-cat-label">Creative</span>
+        <span class="ch-cat-count" id="count-creative">5</span>
+      </button>
+      <button class="ch-cat-btn" data-category="mindfulness" role="tab" aria-selected="false">
+        <span class="ch-cat-icon">🧘</span>
+        <span class="ch-cat-label">Mindfulness</span>
+        <span class="ch-cat-count" id="count-mindfulness">4</span>
+      </button>
+    </div>
+
+    <!-- ═══════ CARD DECK VIEWER ═══════ -->
+    <div class="ch-deck-wrapper" id="ch-deck-wrapper">
+
+      <!-- Side arrows -->
+      <button class="ch-arrow ch-arrow-prev" id="ch-prev" aria-label="Previous challenge" disabled>
+        <span>&#8593;</span>
+      </button>
+
+      <!-- Viewport showing one card at a time -->
+      <div class="ch-viewport" id="ch-viewport">
+        <div class="ch-track" id="ch-track">
+          <!-- Cards injected by challenges-page.js -->
+        </div>
+      </div>
+
+      <button class="ch-arrow ch-arrow-next" id="ch-next" aria-label="Next challenge">
+        <span>&#8595;</span>
+      </button>
+
+    </div>
+
+    <!-- Progress indicator -->
+    <div class="ch-progress-bar-wrap">
+      <div class="ch-progress-dots" id="ch-progress-dots"></div>
+      <p class="ch-counter" id="ch-counter" aria-live="polite">1 / 30</p>
+    </div>
+
+  </main>
+
+  <!-- Toast container -->
+  <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Level-up overlay (shared) -->
+  <div class="levelup-overlay" id="levelup-overlay" hidden aria-live="assertive" role="status">
+    <div class="levelup-badge">
+      <span class="levelup-level" id="levelup-number">2</span>
+      <span class="levelup-lbl">Level</span>
+    </div>
+    <h2 class="levelup-heading">Level Up! 🎊</h2>
+    <p class="levelup-title" id="levelup-title">Pavement Pioneer</p>
+  </div>
+
+  <!-- Leaflet JS (needed for imports) -->
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- Page module -->
+  <script type="module" src="assets/js/challenges-page.js"></script>
+
+  <noscript>
+    <p style="text-align:center;padding:40px;color:#c7ff55">Please enable JavaScript to view Walk Challenges.</p>
+  </noscript>
+</body>
+</html>

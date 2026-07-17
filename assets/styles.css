@@ -1922,3 +1922,234 @@ footer {
 }
 .leaflet-control-zoom-in:hover,
 .leaflet-control-zoom-out:hover { background: var(--card-hover) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   MAP FULLSCREEN BUTTON
+   ══════════════════════════════════════════════════════════════ */
+.map-card {
+  position: relative;
+}
+
+.map-fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 500;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: rgba(13,16,24,0.85);
+  backdrop-filter: blur(8px);
+  color: var(--text-2);
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s var(--spring);
+}
+.map-fullscreen-btn:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+  background: rgba(13,16,24,0.95);
+  transform: scale(1.1);
+}
+
+/* Fullscreen state — overlays the entire viewport */
+.map-card.map-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9000 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: unset !important;
+  box-shadow: none !important;
+}
+.map-card.map-fullscreen #leaflet-map {
+  height: calc(100dvh - 44px) !important;
+  border-radius: 0 !important;
+}
+.map-card.map-fullscreen .map-warning {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8,10,15,0.75);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin: 0;
+  white-space: nowrap;
+}
+.map-card.map-fullscreen .map-fullscreen-btn {
+  top: 12px;
+  right: 12px;
+}
+
+/* Preview map sizing */
+#preview-map-wrap #leaflet-preview,
+#leaflet-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 340px;
+  border-radius: inherit;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MINI CHALLENGE CAROUSEL (Main page — 3 today's quests)
+   ══════════════════════════════════════════════════════════════ */
+
+.mini-carousel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 24px 0 20px;
+}
+
+@media (max-width: 680px) {
+  .mini-carousel {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.mini-challenge-card {
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.22s var(--spring);
+  position: relative;
+  overflow: hidden;
+}
+.mini-challenge-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--rarity-bg, transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.mini-challenge-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--rarity-border, var(--line-2));
+  box-shadow: var(--shadow-md);
+}
+.mini-challenge-card:hover::before { opacity: 1; }
+
+.mini-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mini-card-icon { font-size: 1.6rem; line-height: 1; }
+.mini-card-rarity {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--rarity-color, var(--muted));
+  text-transform: uppercase;
+}
+
+.mini-card-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+.mini-card-desc {
+  font-size: 0.74rem;
+  color: var(--text-2);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mini-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+.mini-card-xp {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--rarity-color, var(--lime));
+  background: var(--rarity-bg, var(--lime-dim));
+  padding: 3px 10px;
+  border-radius: 14px;
+}
+.mini-card-arrow {
+  font-size: 0.8rem;
+  color: var(--muted);
+  transition: transform 0.18s var(--spring);
+}
+.mini-challenge-card:hover .mini-card-arrow {
+  transform: translateX(4px);
+  color: var(--rarity-color, var(--lime));
+}
+
+/* "View All 30 →" link in section header */
+.view-all-link {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--lime);
+  text-decoration: none;
+  border: 1px solid rgba(199,255,85,0.25);
+  padding: 6px 16px;
+  border-radius: 20px;
+  transition: all 0.18s var(--spring);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.view-all-link:hover {
+  background: var(--lime);
+  color: #0b0d12;
+  border-color: var(--lime);
+  transform: translateX(2px);
+}
+
+/* "Explore All Challenges →" wide button */
+.explore-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  border: 1px dashed rgba(199,255,85,0.25);
+  background: rgba(199,255,85,0.04);
+  color: var(--lime);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: all 0.22s var(--spring);
+  margin-top: 4px;
+}
+.explore-all-btn:hover {
+  background: rgba(199,255,85,0.1);
+  border-color: rgba(199,255,85,0.45);
+  transform: translateY(-2px);
+}
+.btn-arrow {
+  font-size: 1.1rem;
+  transition: transform 0.18s var(--spring);
+}
+.explore-all-btn:hover .btn-arrow { transform: translateX(4px); }
+
+/* Active nav link highlight */
+.nav-active {
+  color: var(--lime) !important;
+  background: var(--lime-dim) !important;
+}
+

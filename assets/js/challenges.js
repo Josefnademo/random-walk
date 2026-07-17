@@ -1,7 +1,7 @@
 'use strict';
 /**
- * Challenge System — expanded pool of 21 unique, immersive walking challenges
- * categorized by type. Supports categories, flipping animation states, and details.
+ * Challenge System — 30 immersive walking challenges across 5 categories.
+ * Supports daily rotation, category filtering, flip states, and completion tracking.
  */
 
 import { Storage } from './storage.js';
@@ -26,7 +26,7 @@ function hashString(str) {
   return h;
 }
 
-// ─── Rarity Config (exported for UI) ─────────────────────────────────────────
+// ─── Rarity Config ────────────────────────────────────────────────────────────
 
 export const RARITY = {
   common:    { color: '#8892a4', bg: 'rgba(136,146,164,0.12)', border: 'rgba(136,146,164,0.25)', label: 'Common'    },
@@ -35,256 +35,245 @@ export const RARITY = {
   legendary: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)',   label: 'Legendary'  },
 };
 
-// ─── Categories Config ───────────────────────────────────────────────────────
+// ─── Categories Config ────────────────────────────────────────────────────────
 
 export const CATEGORIES = {
-  exploration: { title: 'Exploration', icon: '🧭', desc: 'Discover new places, pathfind, and explore nature.' },
-  fitness:     { title: 'Speed & Endurance', icon: '⚡', desc: 'Push your pace, burn calories, and go the distance.' },
-  streak:      { title: 'Consistency', icon: '🔥', desc: 'Form walking habits, maintain streaks, and show up daily.' },
-  creative:    { title: 'Creative Vibe', icon: '🎨', desc: 'Engage with photo missions, notice details, and reflect.' },
+  exploration:  { title: 'Exploration',      icon: '🧭', desc: 'Discover new places, pathfind, and explore the unknown.' },
+  fitness:      { title: 'Speed & Distance', icon: '⚡', desc: 'Push your pace, burn calories, and go the distance.'      },
+  streak:       { title: 'Consistency',      icon: '🔥', desc: 'Form habits, maintain streaks, and show up every day.'    },
+  creative:     { title: 'Creative Vibe',    icon: '🎨', desc: 'Photography, observation, art, and social missions.'       },
+  mindfulness:  { title: 'Mindfulness',      icon: '🧘', desc: 'Slow down, breathe deeply, and reconnect with your senses.' },
 };
 
-// ─── Challenge Pool (Exactly 21 challenges) ──────────────────────────────────
+// ─── Challenge Pool (30 challenges) ──────────────────────────────────────────
 
 export const CHALLENGE_POOL = [
-  // --- Category: Exploration ---
+
+  // ════════════ EXPLORATION (7) ════════════
+
   {
-    id: 'exp_1',
-    category: 'exploration',
-    icon: '🏙️',
+    id: 'exp_1', category: 'exploration', icon: '🏙️', rarity: 'common',
     title: 'Urban Explorer',
     desc: 'Navigate through backstreets and narrow lanes.',
-    details: 'Take a detour from your usual route. Turn into three narrow side streets or pedestrian passageways you rarely walk through, and observe the architecture and signs.',
-    xp: 60,
-    est: 20,
-    rarity: 'common'
+    details: 'Take a detour from your usual route. Turn into three narrow side streets or pedestrian passageways you rarely walk through. Notice the textures, signage, and atmosphere of these forgotten corridors.',
+    xp: 60, est: 20,
   },
   {
-    id: 'exp_2',
-    category: 'exploration',
-    icon: '🌿',
+    id: 'exp_2', category: 'exploration', icon: '🌿', rarity: 'rare',
     title: 'Green Escape',
-    desc: 'Route your walk through parks or green zones.',
-    details: 'Spend at least 15 minutes of your walk inside a park, garden, forest, or any natural green corridor. Breathe deeply and notice the variety of tree leaves.',
-    xp: 90,
-    est: 30,
-    rarity: 'rare'
+    desc: 'Route your walk through parks or nature zones.',
+    details: 'Spend at least 15 minutes of your walk inside a park, garden, forest, or any green corridor. Take three slow, deep breaths when you arrive. Notice the variety of plant species, light filtering through trees, and birdsong.',
+    xp: 90, est: 30,
   },
   {
-    id: 'exp_3',
-    category: 'exploration',
-    icon: '📍',
+    id: 'exp_3', category: 'exploration', icon: '📍', rarity: 'epic',
     title: 'Landmark Hunter',
     desc: 'Discover a local historical site or public monument.',
-    details: 'Generate a route near a known local landmark, monument, plaque, or unusual public building. Stop for 30 seconds to read about it or admire its design.',
-    xp: 120,
-    est: 30,
-    rarity: 'epic'
+    details: 'Plot a route near a landmark, statue, plaque, or architecturally notable building. Stop for at least 60 seconds to read or admire it. Try to learn one fact about the place you didn\'t know before.',
+    xp: 120, est: 30,
   },
   {
-    id: 'exp_4',
-    category: 'exploration',
-    icon: '🧭',
+    id: 'exp_4', category: 'exploration', icon: '🧭', rarity: 'epic',
     title: 'New Horizon',
-    desc: 'Start a walk from a completely new origin point.',
-    details: 'Start your walk at least 1 km away from your usual home base (e.g., in a different neighborhood, near work, or off a transit stop) to explore fresh territory.',
-    xp: 150,
-    est: 25,
-    rarity: 'epic'
+    desc: 'Start a walk from a completely unfamiliar location.',
+    details: 'Begin your walk at least 1 km away from your usual starting point — a different neighborhood, near work, or at a transit stop you\'ve never used. Let the unfamiliarity be the adventure.',
+    xp: 150, est: 25,
   },
   {
-    id: 'exp_5',
-    category: 'exploration',
-    icon: '🗺️',
+    id: 'exp_5', category: 'exploration', icon: '🗺️', rarity: 'rare',
     title: 'Pathfinder',
-    desc: 'Generate and complete a walk with 5+ waypoints.',
-    details: 'Generate a walk duration of 45-60 minutes to ensure a complex, winding route with at least 5 different directional turns. Follow it to completion.',
-    xp: 100,
-    est: 45,
-    rarity: 'rare'
+    desc: 'Complete a complex walk with 5+ directional changes.',
+    details: 'Generate a 45–60 minute walk with maximum waypoints enabled. Follow every twist and turn without skipping. The complexity of the route is the challenge — trust the randomness.',
+    xp: 100, est: 45,
   },
   {
-    id: 'exp_6',
-    category: 'exploration',
-    icon: '🔍',
+    id: 'exp_6', category: 'exploration', icon: '🔍', rarity: 'legendary',
     title: 'Secret Corner',
-    desc: 'Find a street you have never set foot on before.',
-    details: 'Walk down a street, alley, or pathway within your local area that you have never walked before. Discover something new in your own backyard.',
-    xp: 200,
-    est: 30,
-    rarity: 'legendary'
+    desc: 'Walk down a street you have never set foot on.',
+    details: 'Find and walk a street, alley, or path that is genuinely new to you, even in your own neighbourhood. You live there — but have you explored all of it? The first step into unknown ground is always the best.',
+    xp: 200, est: 30,
+  },
+  {
+    id: 'exp_7', category: 'exploration', icon: '🌉', rarity: 'rare',
+    title: 'Bridge Crosser',
+    desc: 'Cross at least one bridge or overpass on your walk.',
+    details: 'Plan or adjust a route so that it includes at least one bridge, elevated walkway, or pedestrian overpass. Pause at the midpoint and look out in both directions before continuing.',
+    xp: 85, est: 25,
   },
 
-  // --- Category: Speed & Endurance ---
+  // ════════════ FITNESS / SPEED (7) ════════════
+
   {
-    id: 'fit_1',
-    category: 'fitness',
-    icon: '🏃',
+    id: 'fit_1', category: 'fitness', icon: '🏃', rarity: 'rare',
     title: 'Tempo Surge',
     desc: 'Maintain a brisk, high-energy walking pace.',
-    details: 'Walk at a fast pace (around 5.0–5.5 km/h) for the entire duration of your route. Keep your chest up, swing your arms, and feel the calorie burn.',
-    xp: 80,
-    est: 15,
-    rarity: 'rare'
+    details: 'Walk at approximately 5.0–5.5 km/h for the entire route. Keep your posture upright, arms swinging, and cadence above 110 steps per minute. Feel your breathing deepen and your body warm up.',
+    xp: 80, est: 15,
   },
   {
-    id: 'fit_2',
-    category: 'fitness',
-    icon: '⏰',
+    id: 'fit_2', category: 'fitness', icon: '⏰', rarity: 'rare',
     title: 'Stamina Builder',
-    desc: 'Complete a 40-minute continuous walk.',
-    details: 'Keep moving continuously for 40 minutes. Avoid long pauses at intersections. Walk in circles or back-and-forth if waiting for pedestrian lights to keep your heart rate up.',
-    xp: 100,
-    est: 40,
-    rarity: 'rare'
+    desc: 'Complete a 40-minute continuous walk without stopping.',
+    details: 'Keep moving for a full 40 minutes — no sitting, no prolonged standing. If you need to wait at a crosswalk, march in place. Consistency of motion is the whole point.',
+    xp: 100, est: 40,
   },
   {
-    id: 'fit_3',
-    category: 'fitness',
-    icon: '🔥',
+    id: 'fit_3', category: 'fitness', icon: '🔥', rarity: 'epic',
     title: 'Calorie Crusher',
-    desc: 'Burn an estimated 250 kcal in one session.',
-    details: 'Set your walk duration to 60 minutes or choose Bold energy level to generate a longer, higher-intensity route designed to burn off excess calories.',
-    xp: 150,
-    est: 60,
-    rarity: 'epic'
+    desc: 'Burn an estimated 250 kcal in a single session.',
+    details: 'Choose Bold energy and a 60-minute duration. Walk at a pace that makes conversation slightly difficult. The app will estimate your calorie burn in the stats panel — aim for 250 kcal or more.',
+    xp: 150, est: 60,
   },
   {
-    id: 'fit_4',
-    category: 'fitness',
-    icon: '⚡',
+    id: 'fit_4', category: 'fitness', icon: '⚡', rarity: 'common',
     title: 'Peak Power',
-    desc: 'Generate and walk on Bold energy difficulty.',
-    details: 'Generate a route using the "Bold" energy setting. Walk at a vigorous speed, aiming to complete the looping path faster than the estimated time.',
-    xp: 75,
-    est: 20,
-    rarity: 'common'
+    desc: 'Generate and complete a walk on Bold difficulty.',
+    details: 'Set the energy level to "Bold ⚡" and generate a walk. Walk at maximum comfortable pace for the full duration. The goal is sustained intensity — finish the entire route without slowing down.',
+    xp: 75, est: 20,
   },
   {
-    id: 'fit_5',
-    category: 'fitness',
-    icon: '🏆',
+    id: 'fit_5', category: 'fitness', icon: '🏆', rarity: 'legendary',
     title: 'Endurance King',
-    desc: 'Complete a full 60-minute walk session.',
-    details: 'Push your endurance to the limit by completing a full one-hour walking route. Bring water, wear comfortable walking shoes, and enjoy the journey.',
-    xp: 250,
-    est: 60,
-    rarity: 'legendary'
+    desc: 'Complete a full 60-minute unbroken walking session.',
+    details: 'One hour. One walk. No shortcuts. Bring water, wear your best shoes, and go the full distance. By the time you finish, your body will know it earned every XP point.',
+    xp: 250, est: 60,
+  },
+  {
+    id: 'fit_6', category: 'fitness', icon: '📈', rarity: 'rare',
+    title: 'Hill Seeker',
+    desc: 'Choose a route that includes an elevation change.',
+    details: 'Find a street, park, or area with a noticeable incline. Walk up and down the slope at least twice during your route. Elevation adds significant calorie burn and strengthens the posterior chain.',
+    xp: 110, est: 30,
+  },
+  {
+    id: 'fit_7', category: 'fitness', icon: '🎯', rarity: 'epic',
+    title: 'Split Intervals',
+    desc: 'Alternate between fast and slow walking every 3 minutes.',
+    details: 'For the duration of your walk, set a 3-minute timer and alternate between a fast tempo walk and a gentle recovery pace. This interval approach burns more calories and improves cardiovascular fitness.',
+    xp: 130, est: 30,
   },
 
-  // --- Category: Consistency ---
+  // ════════════ CONSISTENCY / STREAKS (7) ════════════
+
   {
-    id: 'str_1',
-    category: 'streak',
-    icon: '🌅',
+    id: 'str_1', category: 'streak', icon: '🌅', rarity: 'rare',
     title: 'Dawn Patrol',
     desc: 'Complete a walk before 8:00 AM.',
-    details: 'Get out of bed early and generate a walk that begins and ends before 8 AM. Experience the quiet, fresh morning air and kickstart your day.',
-    xp: 90,
-    est: 15,
-    rarity: 'rare'
+    details: 'Set your alarm, get up, and walk before the rest of the world is fully awake. Early morning light is soft, streets are quiet, and your mind will be clearer for the rest of the day.',
+    xp: 90, est: 15,
   },
   {
-    id: 'str_2',
-    category: 'streak',
-    icon: '🌇',
+    id: 'str_2', category: 'streak', icon: '🌇', rarity: 'common',
     title: 'Sunset Nomad',
-    desc: 'Walk during the golden hour (6 PM - 8 PM).',
-    details: 'Walk while the sun sets. Enjoy the dramatic shadows, changing colors of the sky, and winding down after a busy day.',
-    xp: 70,
-    est: 20,
-    rarity: 'common'
+    desc: 'Walk during golden hour — 6 PM to 8 PM.',
+    details: 'Head out while the sun is descending. Golden hour light transforms ordinary streets into something cinematic. Look for long shadows and warm colour tones as you walk.',
+    xp: 70, est: 20,
   },
   {
-    id: 'str_3',
-    category: 'streak',
-    icon: '🔄',
+    id: 'str_3', category: 'streak', icon: '🔄', rarity: 'epic',
     title: 'Double Trouble',
-    desc: 'Complete two separate walks in a single day.',
-    details: 'Generate and complete one walk in the morning, and a second separate walk in the afternoon or evening. Consistency is key!',
-    xp: 180,
-    est: 30,
-    rarity: 'epic'
+    desc: 'Complete two separate walks in one calendar day.',
+    details: 'One in the morning (before noon) and one in the afternoon or evening. They don\'t need to be long — even a 15-minute loop each counts. Two walks, double the XP energy.',
+    xp: 180, est: 30,
   },
   {
-    id: 'str_4',
-    category: 'streak',
-    icon: '🔥',
+    id: 'str_4', category: 'streak', icon: '🔥', rarity: 'epic',
     title: 'Habit Builder',
-    desc: 'Complete a walk 3 days in a row.',
-    details: 'Maintain your walk streak. Complete at least one generated walk of any duration for three consecutive calendar days to lock in this reward.',
-    xp: 150,
-    est: 20,
-    rarity: 'epic'
+    desc: 'Walk on 3 consecutive calendar days.',
+    details: 'Complete at least one generated walk each day for three days in a row. The first day is motivation. The second is discipline. The third is the beginning of a habit.',
+    xp: 150, est: 20,
   },
   {
-    id: 'str_5',
-    category: 'streak',
-    icon: '📅',
+    id: 'str_5', category: 'streak', icon: '📅', rarity: 'legendary',
     title: 'Weekly Ritual',
-    desc: 'Walk a total of 15 km in one week.',
-    details: 'Accumulate a total walking distance of 15 km or more across multiple walks in a 7-day period. Track your progress in the stats section.',
-    xp: 300,
-    est: 90,
-    rarity: 'legendary'
+    desc: 'Accumulate 15 km of walking in 7 days.',
+    details: 'Track your cumulative distance across multiple walks over a week. This works out to roughly 2–3 km per day. Consistent, moderate walking is one of the most impactful habits you can build.',
+    xp: 300, est: 90,
+  },
+  {
+    id: 'str_6', category: 'streak', icon: '🌙', rarity: 'rare',
+    title: 'Night Owl',
+    desc: 'Complete a walk after 9:00 PM.',
+    details: 'Head out after the sun has set for a night walk. Stick to well-lit, familiar streets. Notice how the city sounds and feels completely different after dark — quieter, cooler, and strangely peaceful.',
+    xp: 100, est: 20,
+  },
+  {
+    id: 'str_7', category: 'streak', icon: '☀️', rarity: 'legendary',
+    title: '7-Day Champion',
+    desc: 'Walk every single day for a full week.',
+    details: 'Seven days. Seven walks. No exceptions. Even a 10-minute loop around the block on a hard day counts. Completing this challenge proves that walking has become part of who you are, not just what you do.',
+    xp: 500, est: 20,
   },
 
-  // --- Category: Creative ---
+  // ════════════ CREATIVE (5) ════════════
+
   {
-    id: 'cre_1',
-    category: 'creative',
-    icon: '📷',
+    id: 'cre_1', category: 'creative', icon: '📷', rarity: 'common',
     title: 'Photo Journalist',
-    desc: 'Complete a walk with a Photo Mission.',
-    details: 'Enable the Photo Mission toggle, generate a route, and actively search for the target object. Take a photo when you find it!',
-    xp: 60,
-    est: 20,
-    rarity: 'common'
+    desc: 'Complete a walk with the Photo Mission enabled.',
+    details: 'Enable the Photo Mission toggle before generating your route. While walking, actively hunt for your assigned target object. Photograph it when you find it — and study the scene before you shoot.',
+    xp: 60, est: 20,
   },
   {
-    id: 'cre_2',
-    category: 'creative',
-    icon: '🎨',
+    id: 'cre_2', category: 'creative', icon: '🎨', rarity: 'common',
     title: 'Color Hunt',
-    desc: 'Find objects of three specific different colors.',
-    details: 'While walking, keep your eyes open for objects that are vibrant red, bright yellow, and deep purple. Spot all three to complete the mental hunt.',
-    xp: 80,
-    est: 20,
-    rarity: 'common'
+    desc: 'Find and mentally note three specific vivid colors.',
+    details: 'Pick three colors before you leave: for example, fire-engine red, lemon yellow, and cobalt blue. During your walk, you must spot a real-world object that matches each one. The rule: no cars count.',
+    xp: 80, est: 20,
   },
   {
-    id: 'cre_3',
-    category: 'creative',
-    icon: '👥',
+    id: 'cre_3', category: 'creative', icon: '👥', rarity: 'rare',
     title: 'Shadow Catcher',
-    desc: 'Locate and photograph high-contrast shadows.',
-    details: 'Look for interesting geometric shadows cast by railings, buildings, trees, or people. Capture the best shadow alignment with your camera.',
-    xp: 110,
-    est: 25,
-    rarity: 'rare'
+    desc: 'Photograph at least 3 interesting geometric shadows.',
+    details: 'Look for shadows cast by railings, trees, lampposts, bicycles, or building edges. The best shadows happen when the light is low — mid-morning or late afternoon. Capture 3 that you find aesthetically compelling.',
+    xp: 110, est: 25,
   },
   {
-    id: 'cre_4',
-    category: 'creative',
-    icon: '🤫',
-    title: 'Mindful Observer',
-    desc: 'Walk without listening to music or phones.',
-    details: 'Keep your phone in your pocket and headphones off. Focus entirely on the sounds of your environment, the wind, the footsteps, and your own thoughts.',
-    xp: 130,
-    est: 20,
-    rarity: 'epic'
-  },
-  {
-    id: 'cre_5',
-    category: 'creative',
-    icon: '✉️',
+    id: 'cre_4', category: 'creative', icon: '✉️', rarity: 'rare',
     title: 'Social Walker',
     desc: 'Share your generated route card with a friend.',
-    details: 'Generate a walk, click the Share button, choose a format (Story, Square, or Info), download or share it, and send it to invite a friend to walk.',
-    xp: 90,
-    est: 10,
-    rarity: 'rare'
-  }
+    details: 'After generating a walk, click Share, choose a card format (Story, Square, or Info), then send it to at least one friend or post it publicly. Walking is better when others see you doing it.',
+    xp: 90, est: 10,
+  },
+  {
+    id: 'cre_5', category: 'creative', icon: '🔤', rarity: 'epic',
+    title: 'Letter Walk',
+    desc: 'Plan a route that traces a letter or shape on the map.',
+    details: 'Open Google Maps or OSM, look at your streets, and try to walk a route that roughly forms a letter, number, or simple shape when viewed from above. Screenshot your path in Google Maps for proof.',
+    xp: 180, est: 40,
+  },
+
+  // ════════════ MINDFULNESS (4) ════════════
+
+  {
+    id: 'mnd_1', category: 'mindfulness', icon: '🧘', rarity: 'common',
+    title: 'Silent Walk',
+    desc: 'Walk without music, podcasts, or phone use.',
+    details: 'Leave headphones behind. Put your phone on silent in your pocket. For the full duration of the walk, engage only with your physical surroundings — sounds, smells, textures underfoot, the temperature of the air on your skin.',
+    xp: 100, est: 20,
+  },
+  {
+    id: 'mnd_2', category: 'mindfulness', icon: '🌬️', rarity: 'rare',
+    title: 'Breath Counter',
+    desc: 'Synchronize your steps with your breathing rhythm.',
+    details: 'Inhale for 4 steps, hold for 2, exhale for 4. Maintain this rhythm for at least 10 minutes of your walk. Breathing-movement synchronization reduces cortisol levels and improves focus significantly.',
+    xp: 90, est: 20,
+  },
+  {
+    id: 'mnd_3', category: 'mindfulness', icon: '👣', rarity: 'epic',
+    title: 'Slow Steps',
+    desc: 'Walk at half your normal pace for the entire route.',
+    details: 'Deliberately slow down to roughly 2.5 km/h — a genuine stroll. Let people pass you. Notice how much more you observe when you are not in a hurry. Mindful slowness is its own kind of speed.',
+    xp: 120, est: 30,
+  },
+  {
+    id: 'mnd_4', category: 'mindfulness', icon: '🌳', rarity: 'legendary',
+    title: 'Forest Bath',
+    desc: 'Spend 30 continuous minutes in a natural green space.',
+    details: 'Shinrin-yoku — forest bathing — is a practice of immersing yourself in nature without agenda. Walk through a park, forest, or botanical garden. No destination. No pace target. Just be there and let the environment reset your nervous system.',
+    xp: 220, est: 35,
+  },
+
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -307,7 +296,7 @@ function todayKey() {
 
 /**
  * Get today's 3 daily challenges (deterministic per user per day).
- * Returns three random challenges from different categories.
+ * One from each of 3 randomly chosen categories.
  */
 export function getDailyChallenges() {
   const dateKey = todayKey();
@@ -315,28 +304,19 @@ export function getDailyChallenges() {
   const seed    = hashString(dateKey + userId);
   const rng     = mulberry32(seed);
 
-  // Group by category
-  const grouped = {
-    exploration: CHALLENGE_POOL.filter(c => c.category === 'exploration'),
-    fitness:     CHALLENGE_POOL.filter(c => c.category === 'fitness'),
-    streak:      CHALLENGE_POOL.filter(c => c.category === 'streak'),
-    creative:    CHALLENGE_POOL.filter(c => c.category === 'creative'),
-  };
-
-  // Pick 3 distinct categories deterministically
-  const cats = ['exploration', 'fitness', 'streak', 'creative'];
+  const cats = Object.keys(CATEGORIES);
   const shuffledCats = shuffled(cats, rng);
+
+  const grouped = {};
+  cats.forEach(cat => { grouped[cat] = CHALLENGE_POOL.filter(c => c.category === cat); });
 
   const ch1 = shuffled(grouped[shuffledCats[0]], mulberry32(seed + 10))[0];
   const ch2 = shuffled(grouped[shuffledCats[1]], mulberry32(seed + 20))[0];
   const ch3 = shuffled(grouped[shuffledCats[2]], mulberry32(seed + 30))[0];
 
-  return [ch1, ch2, ch3];
+  return [ch1, ch2, ch3].filter(Boolean);
 }
 
-/**
- * Get (and reset if stale) challenge completion state from storage.
- */
 export function getChallengeState() {
   const dateKey = todayKey();
   const state   = Storage.getDailyChallengesState();
@@ -353,7 +333,7 @@ export function completeChallenge(id) {
   if (!state.completed[id]) {
     state.completed[id] = Date.now();
     Storage.saveDailyChallengesState(state);
-    return true; // newly completed
+    return true;
   }
   return false;
 }
