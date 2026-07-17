@@ -155,16 +155,6 @@ export function drawRouteOnMap(points) {
 
   markerGroup = L.layerGroup().addTo(leafletMap);
 
-  // Dashed route polyline in lime
-  routeLayer = L.polyline(points, {
-    color:     '#c7ff55',
-    weight:    5,
-    opacity:   0.9,
-    lineCap:   'round',
-    lineJoin:  'round',
-    dashArray: '12 6',
-  }).addTo(leafletMap);
-
   // Markers for each waypoint (skip the closing duplicate of start)
   points.slice(0, -1).forEach((pt, i) => {
     const isStart = i === 0;
@@ -179,8 +169,15 @@ export function drawRouteOnMap(points) {
       iconAnchor: isStart ? [22, 22] : [15, 15],
     });
 
-    L.marker(pt, { icon, title: isStart ? 'Start' : `Waypoint ${i}` })
+    const marker = L.marker(pt, { icon, title: isStart ? 'Start' : `Waypoint ${i}` })
       .addTo(markerGroup);
+
+    if (isStart) {
+      marker.on('click', () => {
+        const btn = document.getElementById('map-fullscreen-btn');
+        if (btn) btn.click();
+      });
+    }
   });
 
   // Fit map to route bounds

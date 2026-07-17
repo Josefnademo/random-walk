@@ -35,6 +35,8 @@ const state = {
 let gpsWatcher = null;
 let userCoords = null;
 let autoCenter = true;
+let previewMapInited = false;
+
 
 // ─── Session persistence ──────────────────────────────────────────────────────
 // Saves the active walk to sessionStorage so navigating away and back
@@ -314,7 +316,7 @@ function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
   resultSection.hidden = false;
   resultSection.setAttribute('aria-hidden', 'false');
 
-  // Init Live Map — delay so browser paints the section before Leaflet measures it
+  // Init Live Map only — delay so browser paints the section before Leaflet measures it
   if (isLeafletReady()) {
     setTimeout(() => {
       const mapReady = initMap('leaflet-map');
@@ -325,13 +327,20 @@ function showResult(route, minutes, energy, missionOn, skipMapInit = false) {
         startGPSWatching();
       }
 
-      // Init Preview Map (2nd Leaflet instance — route only)
-      const previewReady = initPreviewMap('leaflet-preview');
-      if (previewReady) {
-        drawRouteOnPreviewMap(route.pts);
+      // If the Preview Map tab is active, draw the route on preview map immediately
+      const tabPreview = document.getElementById('tab-preview');
+      if (tabPreview && tabPreview.classList.contains('active')) {
+        const ok = initPreviewMap('leaflet-preview');
+        if (ok) {
+          drawRouteOnPreviewMap(route.pts);
+          previewMapInited = true;
+        }
       }
     }, 300);
   }
+
+  // Reset preview map init flag so it re-draws when tab is clicked
+  previewMapInited = false;
 
   // Smooth scroll
   setTimeout(() => {
@@ -621,8 +630,18 @@ function init() {
     tabLive?.setAttribute('aria-selected', 'false');
     if (previewWrap) previewWrap.hidden = false;
     if (liveWrap)    liveWrap.hidden    = true;
-    // Invalidate preview map size after it becomes visible
-    setTimeout(() => invalidatePreviewMapSize(), 50);
+    // Lazy-init preview map the FIRST time tab is clicked (element is now visible)
+    setTimeout(() => {
+      if (!previewMapInited && state.route?.pts && isLeafletReady()) {
+        const ok = initPreviewMap('leaflet-preview');
+        if (ok) {
+          drawRouteOnPreviewMap(state.route.pts);
+          previewMapInited = true;
+        }
+      } else {
+        invalidatePreviewMapSize();
+      }
+    }, 80);
   });
 
   // ─── Map fullscreen toggle ───

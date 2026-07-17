@@ -14,34 +14,36 @@ import { showToast } from './ui.js';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let activeCategory   = 'all';
-let displayedCards   = [...CHALLENGE_POOL];
-let currentIndex     = 0;
-const flippedIds     = new Set();
+let activeCategory = 'all';
+let displayedCards = [...CHALLENGE_POOL];
+let currentIndex = 0;
+const flippedIds = new Set();
 
 // ─── DOM Refs ────────────────────────────────────────────────────────────────
 
-const track      = document.getElementById('ch-track');
-const viewport   = document.getElementById('ch-viewport');
-const prevBtn    = document.getElementById('ch-prev');
-const nextBtn    = document.getElementById('ch-next');
-const dotsWrap   = document.getElementById('ch-progress-dots');
-const counter    = document.getElementById('ch-counter');
+const track = document.getElementById('ch-track');
+const viewport = document.getElementById('ch-viewport');
+const prevBtn = document.getElementById('ch-prev');
+const nextBtn = document.getElementById('ch-next');
+const dotsWrap = document.getElementById('ch-progress-dots');
+const counter = document.getElementById('ch-counter');
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 function buildCards() {
   if (!track) return;
 
-  const chState    = getChallengeState();
+  const chState = getChallengeState();
   const acceptedId = sessionStorage.getItem('acceptedChallenge');
 
   track.innerHTML = displayedCards.map((ch, idx) => {
-    const r        = RARITY[ch.rarity] || RARITY.common;
-    const catInfo  = CATEGORIES[ch.category] || { icon: '❓', title: ch.category };
-    const done     = !!chState.completed[ch.id];
+    const r = RARITY[ch.rarity] || RARITY.common;
+    const catInfo = CATEGORIES[ch.category] || { icon: '❓', title: ch.category };
+    const done = !!chState.completed[ch.id];
     const accepted = acceptedId === ch.id;
-    const flipped  = flippedIds.has(ch.id) || done || accepted;
+    const flipped = flippedIds.has(ch.id) || done || accepted;
+
+    if (flipped) flippedIds.add(ch.id);
 
     return `
     <div class="ch-card-slot" data-slot="${idx}">
@@ -49,44 +51,46 @@ function buildCards() {
                data-id="${ch.id}"
                style="--rarity-color:${r.color};--rarity-bg:${r.bg};--rarity-border:${r.border}"
                aria-label="${ch.title} challenge card">
+        <div class="ch-card-inner">
 
-        <!-- FRONT — mystery face-down -->
-        <div class="ch-card-face ch-card-front">
-          <div class="ch-front-glow">
-            <span class="ch-front-emoji">${catInfo.icon}</span>
+          <!-- FRONT — mystery face-down -->
+          <div class="ch-card-face ch-card-front">
+            <div class="ch-front-glow">
+              <span class="ch-front-emoji">${catInfo.icon}</span>
+            </div>
+            <span class="ch-front-cat">${catInfo.title}</span>
+            <span class="ch-front-reveal">Tap to Reveal</span>
           </div>
-          <span class="ch-front-cat">${catInfo.title}</span>
-          <span class="ch-front-reveal">Tap to Reveal</span>
-        </div>
 
-        <!-- BACK — quest details -->
-        <div class="ch-card-face ch-card-back">
-          <div class="ch-back-header">
-            <span class="ch-back-rarity">${r.label}</span>
+          <!-- BACK — quest details -->
+          <div class="ch-card-face ch-card-back">
+            <div class="ch-back-header">
+              <span class="ch-back-rarity">${r.label}</span>
+              ${done
+        ? '<span class="ch-back-badge completed">✓ Done</span>'
+        : accepted
+          ? '<span class="ch-back-badge active">Active</span>'
+          : ''}
+            </div>
+
+            <div class="ch-back-icon">${ch.icon}</div>
+            <h2 class="ch-back-title">${ch.title}</h2>
+            <p class="ch-back-desc">${ch.desc}</p>
+            <p class="ch-back-details">${ch.details || ch.desc}</p>
+
+            <div class="ch-back-footer">
+              <span class="ch-back-xp">+${ch.xp} XP</span>
+              ${ch.est ? `<span class="ch-back-est">~${ch.est} min</span>` : ''}
+            </div>
+
             ${done
-              ? '<span class="ch-back-badge completed">✓ Done</span>'
-              : accepted
-                ? '<span class="ch-back-badge active">Active</span>'
-                : ''}
+        ? '<p class="ch-back-status completed">Quest Completed ✓</p>'
+        : accepted
+          ? '<p class="ch-back-status active">Quest is Active — complete your walk!</p>'
+          : `<button class="ch-back-accept-btn" data-id="${ch.id}">Accept Quest</button>`}
           </div>
 
-          <div class="ch-back-icon">${ch.icon}</div>
-          <h2 class="ch-back-title">${ch.title}</h2>
-          <p class="ch-back-desc">${ch.desc}</p>
-          <p class="ch-back-details">${ch.details || ch.desc}</p>
-
-          <div class="ch-back-footer">
-            <span class="ch-back-xp">+${ch.xp} XP</span>
-            ${ch.est ? `<span class="ch-back-est">~${ch.est} min</span>` : ''}
-          </div>
-
-          ${done
-            ? '<p class="ch-back-status completed">Quest Completed ✓</p>'
-            : accepted
-              ? '<p class="ch-back-status active">Quest is Active — complete your walk!</p>'
-              : `<button class="ch-back-accept-btn" data-id="${ch.id}">Accept Quest</button>`}
         </div>
-
       </article>
     </div>`;
   }).join('');
@@ -120,12 +124,13 @@ function updateNav() {
 
 // ─── Scroll ───────────────────────────────────────────────────────────────────
 
-const CARD_HEIGHT = 520; // must match .ch-card-slot height in CSS
-
 function scrollToCard(idx, animate = true) {
   if (!track) return;
+  const firstSlot = track.querySelector('.ch-card-slot');
+  const cardWidth = firstSlot ? firstSlot.offsetWidth : 520;
+
   if (!animate) track.style.transition = 'none';
-  track.style.transform = `translateY(-${idx * CARD_HEIGHT}px)`;
+  track.style.transform = `translateX(-${idx * cardWidth}px)`;
   if (!animate) requestAnimationFrame(() => { track.style.transition = ''; });
 
   // Update dot highlights
@@ -188,16 +193,16 @@ function setCategory(cat) {
 
 // ─── Touch/Swipe ─────────────────────────────────────────────────────────────
 
-let touchStartY = 0;
-let touchDelta  = 0;
+let touchStartX = 0;
+let touchDelta = 0;
 
 viewport?.addEventListener('touchstart', e => {
-  touchStartY = e.touches[0].clientY;
-  touchDelta  = 0;
+  touchStartX = e.touches[0].clientX;
+  touchDelta = 0;
 }, { passive: true });
 
 viewport?.addEventListener('touchmove', e => {
-  touchDelta = e.touches[0].clientY - touchStartY;
+  touchDelta = e.touches[0].clientX - touchStartX;
 }, { passive: true });
 
 viewport?.addEventListener('touchend', () => {
@@ -210,21 +215,21 @@ viewport?.addEventListener('touchend', () => {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') goTo(currentIndex + 1);
-  if (e.key === 'ArrowUp'   || e.key === 'ArrowLeft')  goTo(currentIndex - 1);
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') goTo(currentIndex - 1);
 });
 
 // ─── XP / Level UI ───────────────────────────────────────────────────────────
 
 function updateXPUI() {
-  const xp   = Storage.getStats().xp;
+  const xp = Storage.getStats().xp;
   const info = getProgressInfo(xp);
 
   const lvlBdg = document.getElementById('level-badge');
-  const xpAmt  = document.getElementById('xp-amount');
+  const xpAmt = document.getElementById('xp-amount');
   const xpFill = document.getElementById('xp-bar-fill');
 
   if (lvlBdg) lvlBdg.textContent = `Lv ${info.level}`;
-  if (xpAmt)  xpAmt.textContent  = xp.toLocaleString() + ' XP';
+  if (xpAmt) xpAmt.textContent = xp.toLocaleString() + ' XP';
   if (xpFill) xpFill.style.width = `${info.progress}%`;
 }
 
@@ -232,16 +237,60 @@ function updateXPUI() {
 
 function initNav() {
   const toggle = document.getElementById('nav-toggle');
-  const nav    = document.getElementById('main-nav');
-  toggle?.addEventListener('click', () => {
-    const open = nav?.classList.toggle('nav-open');
+  const nav = document.getElementById('main-nav');
+  if (!toggle || !nav) return;
+
+  let overlay = document.getElementById('nav-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'nav-overlay';
+    overlay.className = 'nav-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.zIndex = '999';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.background = 'rgba(4, 5, 8, 0)';
+    overlay.style.backdropFilter = 'blur(0px)';
+    overlay.style.webkitBackdropFilter = 'blur(0px)';
+    overlay.style.transition = 'background 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease';
+    document.body.appendChild(overlay);
+  }
+
+  const toggleMenu = (open) => {
+    nav.classList.toggle('nav-open', open);
+    overlay.classList.toggle('active', open);
+    if (open) {
+      overlay.style.background = 'rgba(4, 5, 8, 0.65)';
+      overlay.style.backdropFilter = 'blur(8px)';
+      overlay.style.webkitBackdropFilter = 'blur(8px)';
+      overlay.style.pointerEvents = 'auto';
+    } else {
+      overlay.style.background = 'rgba(4, 5, 8, 0)';
+      overlay.style.backdropFilter = 'blur(0px)';
+      overlay.style.webkitBackdropFilter = 'blur(0px)';
+      overlay.style.pointerEvents = 'none';
+    }
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  };
+
+  toggle.addEventListener('click', () => {
+    const isOpen = nav.classList.contains('nav-open');
+    toggleMenu(!isOpen);
   });
-  nav?.querySelectorAll('a').forEach(a => {
+
+  overlay.addEventListener('click', () => {
+    toggleMenu(false);
+  });
+
+  nav.querySelectorAll('a').forEach(a => {
     a.addEventListener('click', () => {
-      nav.classList.remove('nav-open');
-      toggle?.setAttribute('aria-expanded', 'false');
+      toggleMenu(false);
     });
   });
 }
@@ -269,6 +318,11 @@ function init() {
   // Wire nav arrows
   prevBtn?.addEventListener('click', () => goTo(currentIndex - 1));
   nextBtn?.addEventListener('click', () => goTo(currentIndex + 1));
+
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    scrollToCard(currentIndex, false);
+  });
 
   // Initial render
   buildCards();

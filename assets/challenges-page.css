@@ -163,11 +163,12 @@
   overflow: hidden;
   position: relative;
   border-radius: var(--radius-xl);
+  flex-shrink: 0;
 }
 
 .ch-track {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   transition: transform 0.55s cubic-bezier(0.19, 1, 0.22, 1);
   will-change: transform;
@@ -176,7 +177,7 @@
 /* ── Individual Card Slot ──────────────────────────────── */
 
 .ch-card-slot {
-  width: 100%;
+  width: 520px;
   height: 520px;
   flex-shrink: 0;
   display: flex;
@@ -204,12 +205,16 @@
   border-radius: var(--radius-xl);
 }
 
-.ch-card:hover .ch-card-inner:not(.is-flipped) {
+.ch-card:not(.flipped):hover .ch-card-inner {
   transform: translateY(-6px) rotateY(5deg);
 }
 
 .ch-card.flipped .ch-card-inner {
-  transform: rotateY(180deg) translateY(-4px);
+  transform: rotateY(180deg);
+}
+
+.ch-card.flipped:hover .ch-card-inner {
+  transform: rotateY(180deg) translateY(-6px);
 }
 
 .ch-card-face {
@@ -233,7 +238,6 @@
   align-items: center;
   justify-content: center;
   gap: 18px;
-  position: relative;
 }
 
 .ch-card-front::before {
@@ -463,8 +467,8 @@
   .ch-deck-wrapper { gap: 10px; padding: 16px 8px; min-height: 500px; }
   .ch-arrow { width: 44px; height: 44px; font-size: 1.1rem; }
 
-  .ch-viewport { height: 470px; }
-  .ch-card-slot { height: 470px; }
+  .ch-viewport { width: min(470px, 90vw); height: 470px; }
+  .ch-card-slot { width: min(470px, 90vw); height: 470px; }
   .ch-card { height: 450px; }
   .ch-card-back { padding: 20px; gap: 8px; }
   .ch-back-title { font-size: 1.1rem; }
@@ -473,4 +477,5 @@
 @media (max-width: 380px) {
   .ch-arrow { display: none; }
   .ch-viewport { width: 94vw; }
+  .ch-card-slot { width: 94vw; }
 }

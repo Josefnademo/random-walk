@@ -2,12 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>Privacy — Random Walk Generator</title>
-  <meta name="description" content="Privacy information for Random Walk Generator. No tracking, no server, no account. Your GPS coordinates never leave your device.">
+  <title>Privacy Policy — Random Walk Generator — Safe GPS Walks</title>
+  <meta name="description" content="Read the privacy details of the Random Walk Generator. Absolutely no tracking, no servers, no databases, and no account setup. Your GPS location never leaves your browser.">
   <link rel="canonical" href="https://josefnademo.github.io/random-walk/privacy.html">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="article">
+  <meta property="og:title"       content="Privacy Policy — Random Walk Generator — Safe GPS Walks">
+  <meta property="og:description" content="Your location stays local. Discover why client-side GPS walking loops are completely safe, private, and serverless.">
+  <meta property="og:url"         content="https://josefnademo.github.io/random-walk/privacy.html">
+  <meta property="og:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+  <meta property="og:site_name"   content="Random Walk">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Privacy Policy — Random Walk Generator">
+  <meta name="twitter:description" content="Absolutely no servers, database, or tracking. Your GPS coordinates are processed on-device only.">
+  <meta name="twitter:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
@@ -19,8 +34,11 @@
       <a class="brand" href="./" aria-label="Random Walk — go home">
         <span class="brand-dot" aria-hidden="true"></span>RANDOM/WALK
       </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="./#challenges">Challenges</a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+        <a href="./challenges.html">Challenges</a>
         <a href="./#how">How it works</a>
         <a href="./">Generator</a>
       </nav>
@@ -77,5 +95,10 @@
       <a href="about.html">About</a>
     </nav>
   </footer>
+
+  <script type="module">
+    import { initHamburger } from './assets/js/ui.js';
+    initHamburger();
+  </script>
 </body>
 </html>

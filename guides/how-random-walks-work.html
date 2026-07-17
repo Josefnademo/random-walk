@@ -2,12 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>How the Random Walk Generator Works — Random Walk</title>
-  <meta name="description" content="Learn how this browser-based random walk generator creates approximate local waypoints using GPS coordinates, without any server or API key.">
+  <title>How the Random Walk Generator Works — Math & Privacy Behind Spontaneous Loops</title>
+  <meta name="description" content="Learn how client-side GPS walking loops are calculated in your browser using the Haversine formula and circle points. 100% private, free, and serverless.">
   <link rel="canonical" href="https://josefnademo.github.io/random-walk/guides/how-random-walks-work.html">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="article">
+  <meta property="og:title"       content="How the Random Walk Generator Works — Math & Privacy Behind Spontaneous Loops">
+  <meta property="og:description" content="Calculate circular GPS loops in your browser. Read about the client-side math and privacy-first design.">
+  <meta property="og:url"         content="https://josefnademo.github.io/random-walk/guides/how-random-walks-work.html">
+  <meta property="og:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+  <meta property="og:site_name"   content="Random Walk">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="How the Random Walk Generator Works — Spontaneous GPS Loops">
+  <meta name="twitter:description" content="Spontaneous local loop generator using browser GPS. Client-side, open-source, and private.">
+  <meta name="twitter:image"       content="https://josefnademo.github.io/random-walk/assets/social-card.svg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
@@ -19,8 +34,11 @@
       <a class="brand" href="../" aria-label="Random Walk — go home">
         <span class="brand-dot" aria-hidden="true"></span>RANDOM/WALK
       </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="../#challenges">Challenges</a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+        <a href="../challenges.html">Challenges</a>
         <a href="../#how">How it works</a>
         <a href="../">Generator</a>
       </nav>
@@ -66,5 +84,10 @@
       <a href="../privacy.html">Privacy</a>
     </nav>
   </footer>
+
+  <script type="module">
+    import { initHamburger } from '../assets/js/ui.js';
+    initHamburger();
+  </script>
 </body>
 </html>

@@ -35,7 +35,7 @@ function getToastContainer() {
  * @param {number} duration - ms
  */
 export function showToast(message, type = 'info', duration = 4000) {
-  const c     = getToastContainer();
+  const c = getToastContainer();
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.setAttribute('role', 'status');
@@ -90,9 +90,9 @@ export function showLevelUp(newLevel, title) {
   const overlay = document.getElementById('levelup-overlay');
   if (!overlay) return;
 
-  const lvlEl   = overlay.querySelector('#levelup-number');
+  const lvlEl = overlay.querySelector('#levelup-number');
   const titleEl = overlay.querySelector('#levelup-title');
-  if (lvlEl)   lvlEl.textContent  = newLevel;
+  if (lvlEl) lvlEl.textContent = newLevel;
   if (titleEl) titleEl.textContent = title;
 
   overlay.hidden = false;
@@ -118,17 +118,17 @@ export function showLevelUp(newLevel, title) {
 export function triggerConfetti(container = document.body, count = 80) {
   if (prefersReducedMotion()) return;
 
-  const colors = ['#c7ff55','#60b8ff','#a78bfa','#fbbf24','#f87171','#34d399'];
-  const shapes  = ['circle','rect','triangle'];
+  const colors = ['#c7ff55', '#60b8ff', '#a78bfa', '#fbbf24', '#f87171', '#34d399'];
+  const shapes = ['circle', 'rect', 'triangle'];
 
   for (let i = 0; i < count; i++) {
-    const p      = document.createElement('div');
-    const color  = colors[i % colors.length];
-    const shape  = shapes[Math.floor(Math.random() * shapes.length)];
-    const size   = 6 + Math.random() * 10;
+    const p = document.createElement('div');
+    const color = colors[i % colors.length];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    const size = 6 + Math.random() * 10;
     const startX = 10 + Math.random() * 80; // % from left
-    const delay  = Math.random() * 0.6;
-    const dur    = 1.8 + Math.random() * 1.2;
+    const delay = Math.random() * 0.6;
+    const dur = 1.8 + Math.random() * 1.2;
 
     p.className = 'confetti-piece';
     p.style.cssText = `
@@ -137,7 +137,7 @@ export function triggerConfetti(container = document.body, count = 80) {
       height:${size}px;
       background:${shape !== 'triangle' ? color : 'transparent'};
       border-radius:${shape === 'circle' ? '50%' : shape === 'rect' ? '2px' : '0'};
-      border:${shape === 'triangle' ? `${size/2}px solid transparent; border-bottom:${size}px solid ${color}` : 'none'};
+      border:${shape === 'triangle' ? `${size / 2}px solid transparent; border-bottom:${size}px solid ${color}` : 'none'};
       animation-delay:${delay}s;
       animation-duration:${dur}s;
     `;
@@ -156,7 +156,7 @@ export function animateCounter(el, from, to, duration = 1000, format = n => n) {
   if (prefersReducedMotion()) { el.textContent = format(to); return; }
 
   const start = performance.now();
-  const diff  = to - from;
+  const diff = to - from;
 
   function step(now) {
     const t = Math.min((now - start) / duration, 1);
@@ -176,12 +176,12 @@ export function animateXPBar(barEl, targetPercent, duration = 900) {
   if (!barEl) return;
   if (prefersReducedMotion()) { barEl.style.width = `${targetPercent}%`; return; }
 
-  const start   = parseFloat(barEl.style.width) || 0;
-  const diff    = targetPercent - start;
-  const began   = performance.now();
+  const start = parseFloat(barEl.style.width) || 0;
+  const diff = targetPercent - start;
+  const began = performance.now();
 
   function step(now) {
-    const t     = Math.min((now - began) / duration, 1);
+    const t = Math.min((now - began) / duration, 1);
     const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
     barEl.style.width = `${(start + diff * eased).toFixed(2)}%`;
     if (t < 1) requestAnimationFrame(step);
@@ -198,8 +198,8 @@ export function floatXP(amount, anchorEl) {
   if (prefersReducedMotion() || !anchorEl) return;
 
   const rect = anchorEl.getBoundingClientRect();
-  const el   = document.createElement('div');
-  el.className   = 'float-xp';
+  const el = document.createElement('div');
+  el.className = 'float-xp';
   el.textContent = `+${amount} XP`;
   el.style.cssText = `left:${rect.left + rect.width / 2}px;top:${rect.top + window.scrollY}px;`;
   document.body.appendChild(el);
@@ -217,7 +217,7 @@ export function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
   lastFocus = document.activeElement;
-  modal.hidden   = false;
+  modal.hidden = false;
   modal.removeAttribute('aria-hidden');
   void modal.offsetHeight;
   modal.classList.add('modal-open');
@@ -252,17 +252,34 @@ export function initHamburger() {
   const nav = document.getElementById('main-nav');
   if (!btn || !nav) return;
 
+  let overlay = document.getElementById('nav-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'nav-overlay';
+    overlay.className = 'nav-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  const toggleMenu = (open) => {
+    nav.classList.toggle('nav-open', open);
+    overlay.classList.toggle('active', open);
+    btn.setAttribute('aria-expanded', open);
+    btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  };
+
   btn.addEventListener('click', () => {
-    const isOpen = nav.classList.toggle('nav-open');
-    btn.setAttribute('aria-expanded', isOpen);
-    btn.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+    const isOpen = nav.classList.contains('nav-open');
+    toggleMenu(!isOpen);
+  });
+
+  overlay.addEventListener('click', () => {
+    toggleMenu(false);
   });
 
   // Close on nav link click
   nav.querySelectorAll('a').forEach(a => {
     a.addEventListener('click', () => {
-      nav.classList.remove('nav-open');
-      btn.setAttribute('aria-expanded', 'false');
+      toggleMenu(false);
     });
   });
 }
@@ -294,18 +311,18 @@ export function initRevealAnimations() {
 
 export function setGPSState(state, message = '', percent = 0) {
   const loadingEl = document.getElementById('gps-loading');
-  const errorEl   = document.getElementById('gps-error');
-  const btnEl     = document.getElementById('generate-btn');
+  const errorEl = document.getElementById('gps-error');
+  const btnEl = document.getElementById('generate-btn');
 
   if (state === 'loading') {
     if (loadingEl) {
       loadingEl.hidden = false;
-      const msg  = loadingEl.querySelector('.gps-message');
-      const bar  = loadingEl.querySelector('.gps-progress-fill');
+      const msg = loadingEl.querySelector('.gps-message');
+      const bar = loadingEl.querySelector('.gps-progress-fill');
       if (msg) msg.textContent = message;
       if (bar) bar.style.width = `${percent}%`;
     }
-    if (errorEl)  errorEl.hidden = true;
+    if (errorEl) errorEl.hidden = true;
     if (btnEl) {
       btnEl.disabled = true;
       btnEl.setAttribute('aria-busy', 'true');
@@ -324,7 +341,7 @@ export function setGPSState(state, message = '', percent = 0) {
   } else {
     // 'idle'
     if (loadingEl) loadingEl.hidden = true;
-    if (errorEl)   errorEl.hidden   = true;
+    if (errorEl) errorEl.hidden = true;
     if (btnEl) {
       btnEl.disabled = false;
       btnEl.removeAttribute('aria-busy');
@@ -335,14 +352,14 @@ export function setGPSState(state, message = '', percent = 0) {
 // ─── Tab Slider (Invite) ──────────────────────────────────────────────────────
 
 export function initSlider(sliderId) {
-  const slider  = document.getElementById(sliderId);
+  const slider = document.getElementById(sliderId);
   if (!slider) return;
 
-  const track  = slider.querySelector('.slider-track');
+  const track = slider.querySelector('.slider-track');
   const slides = slider.querySelectorAll('.slide');
-  const dots   = slider.querySelectorAll('.slider-dot');
-  const prev   = slider.querySelector('.slider-prev');
-  const next   = slider.querySelector('.slider-next');
+  const dots = slider.querySelectorAll('.slider-dot');
+  const prev = slider.querySelector('.slider-prev');
+  const next = slider.querySelector('.slider-next');
 
   let current = 0;
 
@@ -361,7 +378,7 @@ export function initSlider(sliderId) {
   // Touch swipe
   let touchX = 0;
   track.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
-  track.addEventListener('touchend',   e => {
+  track.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
   });
